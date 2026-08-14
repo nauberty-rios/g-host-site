@@ -1,0 +1,36 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#07111f"><title>G-Host | Painel do Proprietário</title><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="admin.css"><script src="site-data.js"></script><script defer src="admin.js"></script></head><body class="admin-body">
+<header class="admin-topbar"><div class="container admin-topbar-inner"><a class="brand" href="index.html"><span class="brand-mark"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong>G-Host</strong><small>Painel do proprietário</small></span></a><div class="admin-actions"><button class="btn btn-ghost" id="preview-btn">Visualizar site</button><button class="btn" id="publish-btn-top">Salvar e publicar</button></div></div></header>
+<main class="admin-main container"><aside class="admin-sidebar"><strong>Editar site</strong><a href="#empresa">Empresa</a><a href="#aparencia">Aparência</a><a href="#destaque">Destaque</a><a href="#servicos">Serviços</a><a href="#aviso">Aviso</a><a href="#conexao">Publicação</a><div class="admin-note"><b>Publicação direta</b><p>Depois da configuração inicial, o botão <code>Salvar e publicar</code> envia as alterações ao GitHub automaticamente. A senha de publicação não é salva no site.</p></div></aside>
+<section class="admin-content"><div class="admin-heading"><span class="eyebrow">Controle de conteúdo</span><h1>Painel do proprietário</h1><p>Altere as informações principais sem precisar editar o HTML.</p></div>
+<section class="admin-card" id="empresa"><h2>Empresa e contato</h2><div class="form-grid"><label>Nome da empresa<input data-path="company.name"></label><label>Subtítulo<input data-path="company.subtitle"></label><label>Slogan<input data-path="company.tagline"></label><label>WhatsApp com DDI + DDD<input data-path="company.whatsapp" placeholder="5555999999999"></label><label>Telefone exibido<input data-path="company.phoneDisplay"></label><label>E-mail<input data-path="company.email"></label><label>Região atendida<input data-path="company.location"></label><label>Instagram<input data-path="company.instagram"></label></div></section>
+<section class="admin-card" id="aparencia"><h2>Aparência</h2><div class="form-grid compact"><label>Cor principal<input type="color" data-path="theme.accent"></label><label>Cor secundária<input type="color" data-path="theme.accent2"></label></div></section>
+<section class="admin-card" id="destaque"><h2>Texto principal</h2><div class="form-grid one"><label>Etiqueta<input data-path="hero.eyebrow"></label><label>Título<input data-path="hero.title"></label><label>Descrição<textarea rows="4" data-path="hero.description"></textarea></label><div class="form-grid"><label>Botão principal<input data-path="hero.primaryButton"></label><label>Botão secundário<input data-path="hero.secondaryButton"></label></div></div></section>
+<section class="admin-card" id="servicos"><h2>Serviços exibidos</h2><p class="muted">Ative ou desative os cards que aparecem no site.</p><div id="service-controls" class="service-controls"></div></section>
+<section class="admin-card" id="aviso"><h2>Faixa de aviso</h2><label class="toggle-row"><input type="checkbox" id="announcement-enabled">Exibir aviso no topo</label><label>Texto do aviso<input data-path="announcement.text"></label></section>
+<section class="admin-card" id="conexao">
+<h2>Conexão de publicação</h2>
+<p class="muted">Configure uma única vez o endereço do backend seguro. A senha é solicitada a cada publicação e não fica salva no navegador.</p>
+<div class="form-grid">
+  <label>URL do Publicador
+    <input id="publisher-url" type="url" placeholder="https://g-host-publisher.seu-subdominio.workers.dev">
+  </label>
+  <label>Senha de publicação
+    <input id="publisher-password" type="password" autocomplete="current-password" placeholder="Sua senha privada">
+  </label>
+</div>
+<small class="muted">O endereço do Publicador pode ficar salvo localmente. A senha não.</small>
+</section>
+
+<section class="admin-card admin-publish">
+<h2>Salvar e publicar</h2>
+<p>Ao publicar, o painel atualiza <code>site-data.js</code> no seu repositório. O GitHub Pages recebe o novo commit e publica a versão atualizada automaticamente.</p>
+<div class="publish-buttons">
+  <button class="btn" id="publish-btn">Salvar e publicar agora</button>
+  <button class="btn btn-ghost" id="export-btn">Baixar backup</button>
+  <button class="btn btn-ghost" id="reload-published-btn">Carregar versão publicada</button>
+  <button class="btn btn-ghost" id="reset-btn">Restaurar padrão</button>
+</div>
+<div class="publish-status" id="publish-status" role="status" aria-live="polite">Pronto para editar.</div>
+<small id="save-status">Alterações locais são salvas automaticamente.</small>
+</section>
+</section></main></body></html>
