@@ -30,7 +30,9 @@ window.SITE_DATA = {
     { id:"automation", enabled:true, icon:"home", title:"Automação residencial", description:"Controle de iluminação, portões, tomadas e rotinas pelo celular de forma simples e organizada.", features:["Iluminação inteligente","Rotinas automatizadas","Controle remoto"] },
     { id:"maintenance", enabled:true, icon:"tools", title:"Manutenção preventiva", description:"Revisões periódicas para reduzir falhas, preservar gravações e aumentar a confiabilidade do sistema.", features:["Limpeza e ajustes","Teste de gravação","Cabos, fontes e conexões"] },
     { id:"corrective", enabled:true, icon:"repair", title:"Manutenção corretiva", description:"Diagnóstico e correção de falhas em câmeras, gravadores, alarmes, fontes, redes e dispositivos.", features:["Diagnóstico técnico","Correção de falhas","Substituição quando necessária"] },
-    { id:"access", enabled:true, icon:"access", title:"Controle de acesso", description:"Soluções para organizar e controlar entradas em residências, condomínios e empresas.", features:["Vídeo porteiro","Fechaduras eletrônicas","Controle de entrada"] }
+    { id:"access", enabled:true, icon:"access", title:"Controle de acesso", description:"Soluções para organizar e controlar entradas em residências, condomínios e empresas.", features:["Vídeo porteiro","Fechaduras eletrônicas","Controle de entrada"] },
+    { id:"fence", enabled:true, icon:"alarm", title:"Cerca elétrica", description:"Projeto, instalação, inspeção e manutenção de sistemas de proteção perimetral conforme a necessidade do local.", features:["Proteção perimetral","Inspeção e testes","Manutenção programada"] },
+    { id:"network", enabled:true, icon:"tools", title:"Rede e infraestrutura", description:"Organização da rede que sustenta câmeras, gravadores, automação e acesso remoto.", features:["Switches e cabeamento","Endereçamento e VLAN","Organização técnica"] }
   ],
   about: {
     title: "Uma empresa para cuidar de toda a sua estrutura de segurança.",

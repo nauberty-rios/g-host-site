@@ -284,26 +284,125 @@ const putAudit = async (env, key, data) => {
 
 const personKinds = new Set(["cliente", "contato", "fornecedor", "equipe", "outro"]);
 const projectStatuses = new Set(["planejamento", "orcamento", "aprovado", "em_andamento", "pausado", "concluido", "cancelado"]);
+const projectPriorities = new Set(["baixa", "normal", "alta", "urgente"]);
+const paymentStatuses = new Set(["nao_informado", "pendente", "parcial", "pago", "cancelado"]);
+const systemKinds = new Set(["cftv", "alarme", "automacao", "cerca_eletrica", "controle_acesso", "interfonia", "rede", "outro"]);
+const systemStatuses = new Set(["planejamento", "instalacao", "teste", "operacional", "manutencao", "desativado"]);
+const assetStatuses = new Set(["planejado", "instalado", "operacional", "manutencao", "defeito", "substituido", "retirado"]);
+const serviceKinds = new Set(["instalacao", "vistoria", "preventiva", "corretiva", "retorno", "expansao", "outro"]);
+const serviceStatuses = new Set(["aberta", "agendada", "em_andamento", "concluida", "cancelada"]);
+const recordCategories = new Set(["vistoria","rede","cabeamento","checklist","teste","foto","documento","garantia","manutencao","entrega","treinamento","cerca_eletrica_inspecao","observacao"]);
+
 const dateOnly = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || "")) ? String(value) : "";
+const dateTime = value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(value || "")) ? String(value).slice(0, 16) : "";
 const intId = value => { const n = Number(value); return Number.isInteger(n) && n > 0 ? n : 0; };
+const nonneg = value => { const n = Number(value); return Number.isFinite(n) && n >= 0 ? Math.min(n, 1e12) : 0; };
+
 const cleanPerson = body => ({
   name: str(body?.name, 120),
   kind: personKinds.has(body?.kind) ? body.kind : "outro",
   phone: str(body?.phone, 40),
   email: str(body?.email, 160).toLowerCase(),
   organization: str(body?.organization, 160),
+  documentRef: str(body?.documentRef, 120),
   notes: str(body?.notes, 2000)
+});
+const cleanSite = body => ({
+  name: str(body?.name, 120),
+  customerId: intId(body?.customerId),
+  address: str(body?.address, 220),
+  city: str(body?.city, 100),
+  state: str(body?.state, 30),
+  postalCode: str(body?.postalCode, 20),
+  propertyType: str(body?.propertyType, 80),
+  accessNotes: str(body?.accessNotes, 1000),
+  infrastructureNotes: str(body?.infrastructureNotes, 1800)
 });
 const cleanProject = body => ({
   code: str(body?.code, 40).toUpperCase(),
   name: str(body?.name, 120),
   status: projectStatuses.has(body?.status) ? body.status : "planejamento",
-  type: str(body?.type, 80),
+  priority: projectPriorities.has(body?.priority) ? body.priority : "normal",
+  type: str(body?.type, 100),
+  siteId: intId(body?.siteId),
   location: str(body?.location, 160),
   startDate: dateOnly(body?.startDate),
   dueDate: dateOnly(body?.dueDate),
-  description: str(body?.description, 1500),
-  notes: str(body?.notes, 2000)
+  completedDate: dateOnly(body?.completedDate),
+  customerRequest: str(body?.customerRequest, 1800),
+  scopeSummary: str(body?.scopeSummary, 2200),
+  description: str(body?.description, 2200),
+  quotedValue: nonneg(body?.quotedValue),
+  approvedValue: nonneg(body?.approvedValue),
+  paymentStatus: paymentStatuses.has(body?.paymentStatus) ? body.paymentStatus : "nao_informado",
+  notes: str(body?.notes, 2500)
+});
+const cleanSystem = body => ({
+  projectId: intId(body?.projectId),
+  kind: systemKinds.has(body?.kind) ? body.kind : "outro",
+  name: str(body?.name, 120),
+  area: str(body?.area, 120),
+  status: systemStatuses.has(body?.status) ? body.status : "planejamento",
+  description: str(body?.description, 1600),
+  specs: str(body?.specs, 2500),
+  notes: str(body?.notes, 1800)
+});
+const cleanAsset = body => ({
+  projectId: intId(body?.projectId),
+  systemId: intId(body?.systemId),
+  category: str(body?.category, 100),
+  brand: str(body?.brand, 100),
+  model: str(body?.model, 120),
+  serialNumber: str(body?.serialNumber, 120),
+  macAddress: str(body?.macAddress, 40),
+  ipAddress: str(body?.ipAddress, 64),
+  vlan: str(body?.vlan, 40),
+  channel: str(body?.channel, 60),
+  location: str(body?.location, 160),
+  firmware: str(body?.firmware, 100),
+  powerSource: str(body?.powerSource, 100),
+  installedAt: dateOnly(body?.installedAt),
+  warrantyUntil: dateOnly(body?.warrantyUntil),
+  status: assetStatuses.has(body?.status) ? body.status : "planejado",
+  credentialRef: str(body?.credentialRef, 160),
+  specs: str(body?.specs, 2500),
+  notes: str(body?.notes, 1800)
+});
+const cleanRecord = body => ({
+  projectId: intId(body?.projectId),
+  category: recordCategories.has(body?.category) ? body.category : "observacao",
+  title: str(body?.title, 150),
+  status: str(body?.status, 80),
+  recordDate: dateOnly(body?.recordDate),
+  area: str(body?.area, 120),
+  details: str(body?.details, 5000),
+  referenceUrl: /^https:\/\//i.test(String(body?.referenceUrl || "")) ? str(body.referenceUrl, 500) : ""
+});
+const cleanMaterial = body => ({
+  sku: str(body?.sku, 80),
+  name: str(body?.name, 140),
+  category: str(body?.category, 100),
+  brand: str(body?.brand, 100),
+  model: str(body?.model, 120),
+  unit: str(body?.unit, 20) || "un",
+  currentStock: nonneg(body?.currentStock),
+  minStock: nonneg(body?.minStock),
+  unitCost: nonneg(body?.unitCost),
+  supplierId: intId(body?.supplierId),
+  notes: str(body?.notes, 1600)
+});
+const cleanService = body => ({
+  projectId: intId(body?.projectId),
+  siteId: intId(body?.siteId),
+  kind: serviceKinds.has(body?.kind) ? body.kind : "outro",
+  status: serviceStatuses.has(body?.status) ? body.status : "aberta",
+  scheduledAt: dateTime(body?.scheduledAt),
+  startedAt: dateTime(body?.startedAt),
+  finishedAt: dateTime(body?.finishedAt),
+  nextMaintenanceAt: dateOnly(body?.nextMaintenanceAt),
+  summary: str(body?.summary, 1600),
+  technicianNotes: str(body?.technicianNotes, 2500),
+  customerNotes: str(body?.customerNotes, 1600)
 });
 const auditDb = async (env, action, entityType, entityId = "", details = "") => {
   if (!env.DB) return;
@@ -471,110 +570,181 @@ export default {
 
       if (url.pathname.startsWith("/db/") && !env.DB) return json({ error: "Banco D1 não configurado no Worker." }, 503, cors);
 
+      const requireDbSession = async () => {
+        const session = await getSession(request, env);
+        return session || null;
+      };
+
       if (url.pathname === "/db/people" && request.method === "GET") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        const q = str(url.searchParams.get("q"), 100); const like = `%${q}%`;
-        const stmt = q
-          ? env.DB.prepare("SELECT * FROM people WHERE active=1 AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR organization LIKE ? OR kind LIKE ?) ORDER BY name LIMIT 300").bind(like, like, like, like, like)
-          : env.DB.prepare("SELECT * FROM people WHERE active=1 ORDER BY name LIMIT 300");
-        const res = await stmt.all(); return json({ ok: true, items: res.results || [] }, 200, cors);
+        if (!(await requireDbSession())) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
+        const q = str(url.searchParams.get("q"), 100), like = `%${q}%`;
+        const stmt = q ? env.DB.prepare("SELECT * FROM people WHERE active=1 AND (name LIKE ? OR email LIKE ? OR phone LIKE ? OR organization LIKE ? OR kind LIKE ?) ORDER BY name LIMIT 500").bind(like,like,like,like,like) : env.DB.prepare("SELECT * FROM people WHERE active=1 ORDER BY name LIMIT 500");
+        const res = await stmt.all(); return json({ ok:true, items:res.results||[] },200,cors);
       }
-
       if (url.pathname === "/db/people" && request.method === "POST") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const person = cleanPerson(await parseJson(request)); if (!person.name) return json({ error: "Nome obrigatório." }, 400, cors);
-        const result = await env.DB.prepare("INSERT INTO people(name,kind,phone,email,organization,notes,updated_at) VALUES(?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(person.name, person.kind, person.phone, person.email, person.organization, person.notes).run();
-        await auditDb(env, "create", "person", String(result.meta?.last_row_id || ""), person.name); return json({ ok: true, id: result.meta?.last_row_id || null }, 201, cors);
+        if (!(await requireDbSession())) return json({ error:"Sessão inválida ou expirada." },401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors);
+        const x=cleanPerson(await parseJson(request)); if(!x.name) return json({error:"Nome obrigatório."},400,cors);
+        const r=await env.DB.prepare("INSERT INTO people(name,kind,phone,email,organization,document_ref,notes,updated_at) VALUES(?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.name,x.kind,x.phone,x.email,x.organization,x.documentRef,x.notes).run(); await auditDb(env,"create","person",String(r.meta?.last_row_id||""),x.name); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
+      }
+      const personMatch=/^\/db\/people\/(\d+)$/.exec(url.pathname);
+      if(personMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors);
+        const id=intId(personMatch[1]),x=cleanPerson(await parseJson(request)); if(!id||!x.name) return json({error:"Dados inválidos."},400,cors);
+        await env.DB.prepare("UPDATE people SET name=?,kind=?,phone=?,email=?,organization=?,document_ref=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.name,x.kind,x.phone,x.email,x.organization,x.documentRef,x.notes,id).run(); await auditDb(env,"update","person",String(id),x.name); return json({ok:true},200,cors);
+      }
+      if(personMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const id=intId(personMatch[1]);
+        await env.DB.batch([env.DB.prepare("DELETE FROM project_people WHERE person_id=?").bind(id),env.DB.prepare("UPDATE sites SET customer_id=NULL WHERE customer_id=?").bind(id),env.DB.prepare("UPDATE materials SET supplier_id=NULL WHERE supplier_id=?").bind(id),env.DB.prepare("DELETE FROM people WHERE id=?").bind(id)]); await auditDb(env,"delete","person",String(id)); return json({ok:true},200,cors);
       }
 
-      const personMatch = /^\/db\/people\/(\d+)$/.exec(url.pathname);
-      if (personMatch && request.method === "PUT") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const id = intId(personMatch[1]), person = cleanPerson(await parseJson(request)); if (!id || !person.name) return json({ error: "Dados inválidos." }, 400, cors);
-        await env.DB.prepare("UPDATE people SET name=?,kind=?,phone=?,email=?,organization=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(person.name, person.kind, person.phone, person.email, person.organization, person.notes, id).run();
-        await auditDb(env, "update", "person", String(id), person.name); return json({ ok: true }, 200, cors);
+      if(url.pathname==="/db/sites" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const q=str(url.searchParams.get("q"),100),like=`%${q}%`;
+        const base="SELECT s.*, p.name AS customer_name FROM sites s LEFT JOIN people p ON p.id=s.customer_id WHERE s.active=1";
+        const stmt=q?env.DB.prepare(base+" AND (s.name LIKE ? OR s.address LIKE ? OR s.city LIKE ? OR s.property_type LIKE ? OR p.name LIKE ?) ORDER BY s.name LIMIT 500").bind(like,like,like,like,like):env.DB.prepare(base+" ORDER BY s.name LIMIT 500"); const r=await stmt.all(); return json({ok:true,items:r.results||[]},200,cors);
       }
-      if (personMatch && request.method === "DELETE") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const id = intId(personMatch[1]); if (!id) return json({ error: "ID inválido." }, 400, cors);
-        await env.DB.batch([env.DB.prepare("DELETE FROM project_people WHERE person_id=?").bind(id), env.DB.prepare("DELETE FROM people WHERE id=?").bind(id)]);
-        await auditDb(env, "delete", "person", String(id)); return json({ ok: true }, 200, cors);
+      if(url.pathname==="/db/sites" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const x=cleanSite(await parseJson(request)); if(!x.name)return json({error:"Nome do local obrigatório."},400,cors);
+        const r=await env.DB.prepare("INSERT INTO sites(name,customer_id,address,city,state,postal_code,property_type,access_notes,infrastructure_notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.name,x.customerId||null,x.address,x.city,x.state,x.postalCode,x.propertyType,x.accessNotes,x.infrastructureNotes).run(); await auditDb(env,"create","site",String(r.meta?.last_row_id||""),x.name); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
       }
-
-      if (url.pathname === "/db/projects" && request.method === "GET") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        const q = str(url.searchParams.get("q"), 100); const like = `%${q}%`;
-        const base = "SELECT p.*, (SELECT COUNT(*) FROM project_people pp WHERE pp.project_id=p.id) AS people_count FROM projects p";
-        const stmt = q
-          ? env.DB.prepare(base + " WHERE p.code LIKE ? OR p.name LIKE ? OR p.status LIKE ? OR p.location LIKE ? OR p.type LIKE ? ORDER BY p.updated_at DESC LIMIT 300").bind(like, like, like, like, like)
-          : env.DB.prepare(base + " ORDER BY p.updated_at DESC LIMIT 300");
-        const res = await stmt.all(); return json({ ok: true, items: res.results || [] }, 200, cors);
+      const siteMatch=/^\/db\/sites\/(\d+)$/.exec(url.pathname);
+      if(siteMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const id=intId(siteMatch[1]),x=cleanSite(await parseJson(request)); if(!id||!x.name)return json({error:"Dados inválidos."},400,cors);
+        await env.DB.prepare("UPDATE sites SET name=?,customer_id=?,address=?,city=?,state=?,postal_code=?,property_type=?,access_notes=?,infrastructure_notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.name,x.customerId||null,x.address,x.city,x.state,x.postalCode,x.propertyType,x.accessNotes,x.infrastructureNotes,id).run(); await auditDb(env,"update","site",String(id),x.name); return json({ok:true},200,cors);
+      }
+      if(siteMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const id=intId(siteMatch[1]); await env.DB.batch([env.DB.prepare("UPDATE projects SET site_id=NULL WHERE site_id=?").bind(id),env.DB.prepare("UPDATE service_orders SET site_id=NULL WHERE site_id=?").bind(id),env.DB.prepare("DELETE FROM sites WHERE id=?").bind(id)]); await auditDb(env,"delete","site",String(id)); return json({ok:true},200,cors);
       }
 
-      if (url.pathname === "/db/projects" && request.method === "POST") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const project = cleanProject(await parseJson(request)); if (!project.code || !project.name) return json({ error: "Código e nome são obrigatórios." }, 400, cors);
-        try {
-          const result = await env.DB.prepare("INSERT INTO projects(code,name,status,type,location,start_date,due_date,description,notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(project.code, project.name, project.status, project.type, project.location, project.startDate, project.dueDate, project.description, project.notes).run();
-          await auditDb(env, "create", "project", String(result.meta?.last_row_id || ""), project.code); return json({ ok: true, id: result.meta?.last_row_id || null }, 201, cors);
-        } catch (_) { return json({ error: "Código de projeto já existe ou os dados são inválidos." }, 409, cors); }
+      if(url.pathname==="/db/projects" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const q=str(url.searchParams.get("q"),100),like=`%${q}%`;
+        const base="SELECT p.*, s.name AS site_name, (SELECT COUNT(*) FROM project_people pp WHERE pp.project_id=p.id) AS people_count, (SELECT COUNT(*) FROM project_systems ps WHERE ps.project_id=p.id) AS system_count FROM projects p LEFT JOIN sites s ON s.id=p.site_id";
+        const stmt=q?env.DB.prepare(base+" WHERE p.code LIKE ? OR p.name LIKE ? OR p.status LIKE ? OR p.location LIKE ? OR p.type LIKE ? OR s.name LIKE ? ORDER BY p.updated_at DESC LIMIT 500").bind(like,like,like,like,like,like):env.DB.prepare(base+" ORDER BY p.updated_at DESC LIMIT 500"); const r=await stmt.all(); return json({ok:true,items:r.results||[]},200,cors);
+      }
+      if(url.pathname==="/db/projects" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const x=cleanProject(await parseJson(request)); if(!x.code||!x.name)return json({error:"Código e nome são obrigatórios."},400,cors);
+        try{const r=await env.DB.prepare("INSERT INTO projects(code,name,status,priority,type,site_id,location,start_date,due_date,completed_date,customer_request,scope_summary,description,quoted_value,approved_value,payment_status,notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.code,x.name,x.status,x.priority,x.type,x.siteId||null,x.location,x.startDate,x.dueDate,x.completedDate,x.customerRequest,x.scopeSummary,x.description,x.quotedValue,x.approvedValue,x.paymentStatus,x.notes).run(); await auditDb(env,"create","project",String(r.meta?.last_row_id||""),x.code); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);}catch(_){return json({error:"Código de projeto já existe ou os dados são inválidos."},409,cors);}
+      }
+      const projectMatch=/^\/db\/projects\/(\d+)$/.exec(url.pathname);
+      if(projectMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const id=intId(projectMatch[1]),x=cleanProject(await parseJson(request)); if(!id||!x.code||!x.name)return json({error:"Dados inválidos."},400,cors);
+        try{await env.DB.prepare("UPDATE projects SET code=?,name=?,status=?,priority=?,type=?,site_id=?,location=?,start_date=?,due_date=?,completed_date=?,customer_request=?,scope_summary=?,description=?,quoted_value=?,approved_value=?,payment_status=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.code,x.name,x.status,x.priority,x.type,x.siteId||null,x.location,x.startDate,x.dueDate,x.completedDate,x.customerRequest,x.scopeSummary,x.description,x.quotedValue,x.approvedValue,x.paymentStatus,x.notes,id).run(); await auditDb(env,"update","project",String(id),x.code); return json({ok:true},200,cors);}catch(_){return json({error:"Código de projeto já existe ou os dados são inválidos."},409,cors);}
+      }
+      if(projectMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const id=intId(projectMatch[1]); await env.DB.batch([env.DB.prepare("DELETE FROM project_people WHERE project_id=?").bind(id),env.DB.prepare("DELETE FROM assets WHERE project_id=?").bind(id),env.DB.prepare("DELETE FROM project_systems WHERE project_id=?").bind(id),env.DB.prepare("DELETE FROM project_records WHERE project_id=?").bind(id),env.DB.prepare("DELETE FROM project_materials WHERE project_id=?").bind(id),env.DB.prepare("UPDATE service_orders SET project_id=NULL WHERE project_id=?").bind(id),env.DB.prepare("DELETE FROM projects WHERE id=?").bind(id)]); await auditDb(env,"delete","project",String(id)); return json({ok:true},200,cors);
       }
 
-      const projectMatch = /^\/db\/projects\/(\d+)$/.exec(url.pathname);
-      if (projectMatch && request.method === "PUT") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const id = intId(projectMatch[1]), project = cleanProject(await parseJson(request)); if (!id || !project.code || !project.name) return json({ error: "Dados inválidos." }, 400, cors);
-        try {
-          await env.DB.prepare("UPDATE projects SET code=?,name=?,status=?,type=?,location=?,start_date=?,due_date=?,description=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(project.code, project.name, project.status, project.type, project.location, project.startDate, project.dueDate, project.description, project.notes, id).run();
-          await auditDb(env, "update", "project", String(id), project.code); return json({ ok: true }, 200, cors);
-        } catch (_) { return json({ error: "Código de projeto já existe ou os dados são inválidos." }, 409, cors); }
+      const projectPeople=/^\/db\/projects\/(\d+)\/people$/.exec(url.pathname);
+      if(projectPeople && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(projectPeople[1]); const r=await env.DB.prepare("SELECT p.id,p.name,p.kind,p.phone,p.email,p.organization,pp.role,pp.notes FROM project_people pp JOIN people p ON p.id=pp.person_id WHERE pp.project_id=? ORDER BY p.name").bind(id).all(); return json({ok:true,items:r.results||[]},200,cors);
       }
-      if (projectMatch && request.method === "DELETE") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const id = intId(projectMatch[1]); if (!id) return json({ error: "ID inválido." }, 400, cors);
-        await env.DB.batch([env.DB.prepare("DELETE FROM project_people WHERE project_id=?").bind(id), env.DB.prepare("DELETE FROM projects WHERE id=?").bind(id)]);
-        await auditDb(env, "delete", "project", String(id)); return json({ ok: true }, 200, cors);
+      if(projectPeople && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const projectId=intId(projectPeople[1]),b=await parseJson(request),personId=intId(b.personId),role=str(b.role,100),notes=str(b.notes,300); if(!projectId||!personId)return json({error:"Projeto ou pessoa inválidos."},400,cors); await env.DB.prepare("INSERT INTO project_people(project_id,person_id,role,notes) VALUES(?,?,?,?) ON CONFLICT(project_id,person_id) DO UPDATE SET role=excluded.role,notes=excluded.notes").bind(projectId,personId,role,notes).run(); await auditDb(env,"link","project_person",`${projectId}:${personId}`,role); return json({ok:true},200,cors);
+      }
+      const unlink=/^\/db\/projects\/(\d+)\/people\/(\d+)$/.exec(url.pathname);
+      if(unlink && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const projectId=intId(unlink[1]),personId=intId(unlink[2]); await env.DB.prepare("DELETE FROM project_people WHERE project_id=? AND person_id=?").bind(projectId,personId).run(); await auditDb(env,"unlink","project_person",`${projectId}:${personId}`); return json({ok:true},200,cors);
       }
 
-      const projectPeople = /^\/db\/projects\/(\d+)\/people$/.exec(url.pathname);
-      if (projectPeople && request.method === "GET") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        const id = intId(projectPeople[1]); const res = await env.DB.prepare("SELECT p.id,p.name,p.kind,p.phone,p.email,p.organization,pp.role,pp.notes FROM project_people pp JOIN people p ON p.id=pp.person_id WHERE pp.project_id=? ORDER BY p.name").bind(id).all();
-        return json({ ok: true, items: res.results || [] }, 200, cors);
+      if(url.pathname==="/db/systems" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const projectId=intId(url.searchParams.get("projectId")); const stmt=projectId?env.DB.prepare("SELECT s.*,p.code AS project_code,p.name AS project_name FROM project_systems s JOIN projects p ON p.id=s.project_id WHERE s.project_id=? ORDER BY s.id DESC LIMIT 1000").bind(projectId):env.DB.prepare("SELECT s.*,p.code AS project_code,p.name AS project_name FROM project_systems s JOIN projects p ON p.id=s.project_id ORDER BY s.id DESC LIMIT 1000"); const r=await stmt.all(); return json({ok:true,items:r.results||[]},200,cors);
       }
-      if (projectPeople && request.method === "POST") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const projectId = intId(projectPeople[1]); const body = await parseJson(request); const personId = intId(body.personId); const role = str(body.role, 100); const notes = str(body.notes, 300);
-        if (!projectId || !personId) return json({ error: "Projeto ou pessoa inválidos." }, 400, cors);
-        await env.DB.prepare("INSERT INTO project_people(project_id,person_id,role,notes) VALUES(?,?,?,?) ON CONFLICT(project_id,person_id) DO UPDATE SET role=excluded.role,notes=excluded.notes").bind(projectId, personId, role, notes).run();
-        await auditDb(env, "link", "project_person", `${projectId}:${personId}`, role); return json({ ok: true }, 200, cors);
+      if(url.pathname==="/db/systems" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); if (!(await dbWriteRate(request,env))) return json({error:"Muitas alterações em pouco tempo."},429,cors); const x=cleanSystem(await parseJson(request)); if(!x.projectId||!x.name)return json({error:"Projeto e nome do sistema são obrigatórios."},400,cors); const r=await env.DB.prepare("INSERT INTO project_systems(project_id,kind,name,area,status,description,specs,notes,updated_at) VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.projectId,x.kind,x.name,x.area,x.status,x.description,x.specs,x.notes).run(); await auditDb(env,"create","system",String(r.meta?.last_row_id||""),x.name); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
       }
-
-      const unlink = /^\/db\/projects\/(\d+)\/people\/(\d+)$/.exec(url.pathname);
-      if (unlink && request.method === "DELETE") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        if (!(await dbWriteRate(request, env))) return json({ error: "Muitas alterações em pouco tempo." }, 429, cors);
-        const projectId = intId(unlink[1]), personId = intId(unlink[2]);
-        await env.DB.prepare("DELETE FROM project_people WHERE project_id=? AND person_id=?").bind(projectId, personId).run();
-        await auditDb(env, "unlink", "project_person", `${projectId}:${personId}`); return json({ ok: true }, 200, cors);
+      const systemMatch=/^\/db\/systems\/(\d+)$/.exec(url.pathname);
+      if(systemMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(systemMatch[1]),x=cleanSystem(await parseJson(request)); if(!id||!x.projectId||!x.name)return json({error:"Dados inválidos."},400,cors); await env.DB.prepare("UPDATE project_systems SET project_id=?,kind=?,name=?,area=?,status=?,description=?,specs=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.projectId,x.kind,x.name,x.area,x.status,x.description,x.specs,x.notes,id).run(); await auditDb(env,"update","system",String(id),x.name); return json({ok:true},200,cors);
+      }
+      if(systemMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(systemMatch[1]); await env.DB.batch([env.DB.prepare("UPDATE assets SET system_id=NULL WHERE system_id=?").bind(id),env.DB.prepare("DELETE FROM project_systems WHERE id=?").bind(id)]); await auditDb(env,"delete","system",String(id)); return json({ok:true},200,cors);
       }
 
-      if (url.pathname === "/db/export" && request.method === "GET") {
-        const session = await getSession(request, env); if (!session) return json({ error: "Sessão inválida ou expirada." }, 401, cors);
-        const [people, projects, links] = await Promise.all([
-          env.DB.prepare("SELECT * FROM people WHERE active=1 ORDER BY id").all(),
-          env.DB.prepare("SELECT * FROM projects ORDER BY id").all(),
-          env.DB.prepare("SELECT * FROM project_people ORDER BY project_id,person_id").all()
-        ]);
-        return json({ ok: true, exportedAt: new Date().toISOString(), people: people.results || [], projects: projects.results || [], projectPeople: links.results || [] }, 200, cors);
+      if(url.pathname==="/db/assets" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const r=await env.DB.prepare("SELECT a.*,p.code AS project_code,s.name AS system_name,s.kind AS system_kind FROM assets a JOIN projects p ON p.id=a.project_id LEFT JOIN project_systems s ON s.id=a.system_id ORDER BY a.updated_at DESC LIMIT 2000").all(); return json({ok:true,items:r.results||[]},200,cors);
       }
+      if(url.pathname==="/db/assets" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const x=cleanAsset(await parseJson(request)); if(!x.projectId||!x.category)return json({error:"Projeto e categoria são obrigatórios."},400,cors); const r=await env.DB.prepare("INSERT INTO assets(project_id,system_id,category,brand,model,serial_number,mac_address,ip_address,vlan,channel,location,firmware,power_source,installed_at,warranty_until,status,credential_ref,specs,notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.projectId,x.systemId||null,x.category,x.brand,x.model,x.serialNumber,x.macAddress,x.ipAddress,x.vlan,x.channel,x.location,x.firmware,x.powerSource,x.installedAt,x.warrantyUntil,x.status,x.credentialRef,x.specs,x.notes).run(); await auditDb(env,"create","asset",String(r.meta?.last_row_id||""),`${x.category} ${x.model}`); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
+      }
+      const assetMatch=/^\/db\/assets\/(\d+)$/.exec(url.pathname);
+      if(assetMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(assetMatch[1]),x=cleanAsset(await parseJson(request)); if(!id||!x.projectId||!x.category)return json({error:"Dados inválidos."},400,cors); await env.DB.prepare("UPDATE assets SET project_id=?,system_id=?,category=?,brand=?,model=?,serial_number=?,mac_address=?,ip_address=?,vlan=?,channel=?,location=?,firmware=?,power_source=?,installed_at=?,warranty_until=?,status=?,credential_ref=?,specs=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.projectId,x.systemId||null,x.category,x.brand,x.model,x.serialNumber,x.macAddress,x.ipAddress,x.vlan,x.channel,x.location,x.firmware,x.powerSource,x.installedAt,x.warrantyUntil,x.status,x.credentialRef,x.specs,x.notes,id).run(); await auditDb(env,"update","asset",String(id),`${x.category} ${x.model}`); return json({ok:true},200,cors);
+      }
+      if(assetMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(assetMatch[1]); await env.DB.prepare("DELETE FROM assets WHERE id=?").bind(id).run(); await auditDb(env,"delete","asset",String(id)); return json({ok:true},200,cors);
+      }
+
+      if(url.pathname==="/db/records" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const r=await env.DB.prepare("SELECT r.*,p.code AS project_code,p.name AS project_name FROM project_records r JOIN projects p ON p.id=r.project_id ORDER BY COALESCE(NULLIF(r.record_date,''),r.created_at) DESC,r.id DESC LIMIT 3000").all(); return json({ok:true,items:r.results||[]},200,cors);
+      }
+      if(url.pathname==="/db/records" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const x=cleanRecord(await parseJson(request)); if(!x.projectId||!x.title)return json({error:"Projeto e título são obrigatórios."},400,cors); const r=await env.DB.prepare("INSERT INTO project_records(project_id,category,title,status,record_date,area,details,reference_url,updated_at) VALUES(?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.projectId,x.category,x.title,x.status,x.recordDate,x.area,x.details,x.referenceUrl).run(); await auditDb(env,"create","record",String(r.meta?.last_row_id||""),x.title); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
+      }
+      const recordMatch=/^\/db\/records\/(\d+)$/.exec(url.pathname);
+      if(recordMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(recordMatch[1]),x=cleanRecord(await parseJson(request)); if(!id||!x.projectId||!x.title)return json({error:"Dados inválidos."},400,cors); await env.DB.prepare("UPDATE project_records SET project_id=?,category=?,title=?,status=?,record_date=?,area=?,details=?,reference_url=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.projectId,x.category,x.title,x.status,x.recordDate,x.area,x.details,x.referenceUrl,id).run(); await auditDb(env,"update","record",String(id),x.title); return json({ok:true},200,cors);
+      }
+      if(recordMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(recordMatch[1]); await env.DB.prepare("DELETE FROM project_records WHERE id=?").bind(id).run(); await auditDb(env,"delete","record",String(id)); return json({ok:true},200,cors);
+      }
+
+      if(url.pathname==="/db/materials" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const r=await env.DB.prepare("SELECT m.*,p.name AS supplier_name FROM materials m LEFT JOIN people p ON p.id=m.supplier_id WHERE m.active=1 ORDER BY m.name LIMIT 2000").all(); return json({ok:true,items:r.results||[]},200,cors);
+      }
+      if(url.pathname==="/db/materials" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const x=cleanMaterial(await parseJson(request)); if(!x.name)return json({error:"Nome do material obrigatório."},400,cors); const r=await env.DB.prepare("INSERT INTO materials(sku,name,category,brand,model,unit,current_stock,min_stock,unit_cost,supplier_id,notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.sku,x.name,x.category,x.brand,x.model,x.unit,x.currentStock,x.minStock,x.unitCost,x.supplierId||null,x.notes).run(); await auditDb(env,"create","material",String(r.meta?.last_row_id||""),x.name); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
+      }
+      const materialMatch=/^\/db\/materials\/(\d+)$/.exec(url.pathname);
+      if(materialMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(materialMatch[1]),x=cleanMaterial(await parseJson(request)); if(!id||!x.name)return json({error:"Dados inválidos."},400,cors); await env.DB.prepare("UPDATE materials SET sku=?,name=?,category=?,brand=?,model=?,unit=?,current_stock=?,min_stock=?,unit_cost=?,supplier_id=?,notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.sku,x.name,x.category,x.brand,x.model,x.unit,x.currentStock,x.minStock,x.unitCost,x.supplierId||null,x.notes,id).run(); await auditDb(env,"update","material",String(id),x.name); return json({ok:true},200,cors);
+      }
+      if(materialMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(materialMatch[1]); await env.DB.batch([env.DB.prepare("DELETE FROM project_materials WHERE material_id=?").bind(id),env.DB.prepare("DELETE FROM materials WHERE id=?").bind(id)]); await auditDb(env,"delete","material",String(id)); return json({ok:true},200,cors);
+      }
+      const projectMaterials=/^\/db\/projects\/(\d+)\/materials$/.exec(url.pathname);
+      if(projectMaterials && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(projectMaterials[1]); const r=await env.DB.prepare("SELECT m.id,m.sku,m.name,m.category,m.unit,pm.planned_qty,pm.used_qty,pm.notes FROM project_materials pm JOIN materials m ON m.id=pm.material_id WHERE pm.project_id=? ORDER BY m.name").bind(id).all(); return json({ok:true,items:r.results||[]},200,cors);
+      }
+      if(projectMaterials && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const projectId=intId(projectMaterials[1]),b=await parseJson(request),materialId=intId(b.materialId),planned=nonneg(b.plannedQty),used=nonneg(b.usedQty),notes=str(b.notes,300); if(!projectId||!materialId)return json({error:"Projeto ou material inválido."},400,cors); await env.DB.prepare("INSERT INTO project_materials(project_id,material_id,planned_qty,used_qty,notes) VALUES(?,?,?,?,?) ON CONFLICT(project_id,material_id) DO UPDATE SET planned_qty=excluded.planned_qty,used_qty=excluded.used_qty,notes=excluded.notes").bind(projectId,materialId,planned,used,notes).run(); await auditDb(env,"link","project_material",`${projectId}:${materialId}`); return json({ok:true},200,cors);
+      }
+      const unlinkMaterial=/^\/db\/projects\/(\d+)\/materials\/(\d+)$/.exec(url.pathname);
+      if(unlinkMaterial && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const projectId=intId(unlinkMaterial[1]),materialId=intId(unlinkMaterial[2]); await env.DB.prepare("DELETE FROM project_materials WHERE project_id=? AND material_id=?").bind(projectId,materialId).run(); await auditDb(env,"unlink","project_material",`${projectId}:${materialId}`); return json({ok:true},200,cors);
+      }
+
+      if(url.pathname==="/db/services" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const r=await env.DB.prepare("SELECT so.*,p.code AS project_code,p.name AS project_name,s.name AS site_name FROM service_orders so LEFT JOIN projects p ON p.id=so.project_id LEFT JOIN sites s ON s.id=so.site_id ORDER BY COALESCE(NULLIF(so.scheduled_at,''),so.created_at) DESC LIMIT 2000").all(); return json({ok:true,items:r.results||[]},200,cors);
+      }
+      if(url.pathname==="/db/services" && request.method==="POST"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const x=cleanService(await parseJson(request)); const r=await env.DB.prepare("INSERT INTO service_orders(project_id,site_id,kind,status,scheduled_at,started_at,finished_at,next_maintenance_at,summary,technician_notes,customer_notes,updated_at) VALUES(?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)").bind(x.projectId||null,x.siteId||null,x.kind,x.status,x.scheduledAt,x.startedAt,x.finishedAt,x.nextMaintenanceAt,x.summary,x.technicianNotes,x.customerNotes).run(); await auditDb(env,"create","service",String(r.meta?.last_row_id||""),x.kind); return json({ok:true,id:r.meta?.last_row_id||null},201,cors);
+      }
+      const serviceMatch=/^\/db\/services\/(\d+)$/.exec(url.pathname);
+      if(serviceMatch && request.method==="PUT"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(serviceMatch[1]),x=cleanService(await parseJson(request)); if(!id)return json({error:"ID inválido."},400,cors); await env.DB.prepare("UPDATE service_orders SET project_id=?,site_id=?,kind=?,status=?,scheduled_at=?,started_at=?,finished_at=?,next_maintenance_at=?,summary=?,technician_notes=?,customer_notes=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(x.projectId||null,x.siteId||null,x.kind,x.status,x.scheduledAt,x.startedAt,x.finishedAt,x.nextMaintenanceAt,x.summary,x.technicianNotes,x.customerNotes,id).run(); await auditDb(env,"update","service",String(id),x.kind); return json({ok:true},200,cors);
+      }
+      if(serviceMatch && request.method==="DELETE"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors); const id=intId(serviceMatch[1]); await env.DB.prepare("DELETE FROM service_orders WHERE id=?").bind(id).run(); await auditDb(env,"delete","service",String(id)); return json({ok:true},200,cors);
+      }
+
+      if(url.pathname==="/db/export" && request.method==="GET"){
+        if (!(await requireDbSession())) return json({error:"Sessão inválida ou expirada."},401,cors);
+        const queries = {
+          people: "SELECT * FROM people ORDER BY id",
+          sites: "SELECT * FROM sites ORDER BY id",
+          projects: "SELECT * FROM projects ORDER BY id",
+          project_people: "SELECT * FROM project_people ORDER BY project_id, person_id",
+          project_systems: "SELECT * FROM project_systems ORDER BY id",
+          assets: "SELECT * FROM assets ORDER BY id",
+          project_records: "SELECT * FROM project_records ORDER BY id",
+          materials: "SELECT * FROM materials ORDER BY id",
+          project_materials: "SELECT * FROM project_materials ORDER BY project_id, material_id",
+          service_orders: "SELECT * FROM service_orders ORDER BY id",
+          audit_log: "SELECT * FROM audit_log ORDER BY id"
+        };
+        const out={ok:true,exportedAt:new Date().toISOString()};
+        for(const [name,sql] of Object.entries(queries)){const r=await env.DB.prepare(sql).all().catch(()=>({results:[]})); out[name]=r.results||[];} return json(out,200,cors);
+      }
+
 
       if (url.pathname === "/publish" && request.method === "POST") {
         const session = await getSession(request, env);

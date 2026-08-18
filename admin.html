@@ -74,7 +74,7 @@
   <div id="admin-shell" hidden>
     <header class="admin-topbar"><div class="container admin-topbar-inner"><a class="brand" href="index.html"><span class="brand-mark"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong>G-Host</strong><small>Painel protegido</small></span></a><div class="admin-actions"><span class="session-chip" id="session-timer" aria-live="polite">Sessão protegida</span><button class="btn btn-ghost" id="preview-btn">Visualizar site</button><button class="btn btn-ghost" id="logout-btn">Sair</button><button class="btn" id="publish-btn-top">Salvar e publicar</button></div></div></header>
 
-    <main class="admin-main container"><aside class="admin-sidebar"><strong>Controle G-Host</strong><a href="#empresa">Empresa</a><a href="#aparencia">Aparência</a><a href="#destaque">Destaque</a><a href="#conteudo-manual">Conteúdo manual</a><a href="#projetos">Projetos</a><a href="#pessoas">Pessoas</a><a href="#vinculos">Projeto ↔ pessoas</a><a href="#aviso">Aviso</a><a href="#seguranca">Segurança</a><div class="admin-note"><b>Autenticação forte</b><p>A sessão expira no servidor. Senha, token do GitHub e credenciais de e-mail/SMS nunca ficam no HTML.</p></div></aside>
+    <main class="admin-main container"><aside class="admin-sidebar"><strong>Controle G-Host</strong><a href="#empresa">Empresa</a><a href="#aparencia">Aparência</a><a href="#destaque">Destaque</a><a href="#conteudo-manual">Conteúdo manual</a><a href="#pessoas">Pessoas</a><a href="#locais">Locais</a><a href="#projetos">Projetos</a><a href="#vinculos">Projeto ↔ pessoas</a><a href="#sistemas">Sistemas</a><a href="#equipamentos">Equipamentos</a><a href="#registros">Dossiê técnico</a><a href="#materiais">Materiais</a><a href="#servicos">Ordens e manutenção</a><a href="#aviso">Aviso</a><a href="#seguranca">Segurança</a><div class="admin-note"><b>Autenticação forte</b><p>A sessão expira no servidor. Senha, token do GitHub e credenciais de e-mail/SMS nunca ficam no HTML.</p></div></aside>
       <section class="admin-content"><div class="admin-heading"><span class="eyebrow">Controle de conteúdo</span><h1>Painel do proprietário</h1><p>Altere as informações principais sem editar o HTML.</p></div>
         <section class="admin-card" id="empresa"><h2>Empresa e contato</h2><div class="form-grid"><label>Nome da empresa<input data-path="company.name" maxlength="80"></label><label>Subtítulo<input data-path="company.subtitle" maxlength="120"></label><label>Slogan<input data-path="company.tagline" maxlength="120"></label><label>WhatsApp com DDI + DDD<input data-path="company.whatsapp" inputmode="numeric" maxlength="15" placeholder="5555999999999"></label><label>Telefone exibido<input data-path="company.phoneDisplay" maxlength="40"></label><label>E-mail<input data-path="company.email" type="email" maxlength="160"></label><label>Região atendida<input data-path="company.location" maxlength="160"></label><label>Instagram<input data-path="company.instagram" maxlength="100"></label></div></section>
         <section class="admin-card" id="aparencia"><h2>Aparência</h2><div class="form-grid compact"><label>Cor principal<input type="color" data-path="theme.accent"></label><label>Cor secundária<input type="color" data-path="theme.accent2"></label></div></section>
@@ -89,20 +89,45 @@
           <input id="import-json-file" type="file" accept="application/json,.json" hidden>
         </section>
         <section class="admin-card" id="aviso"><h2>Faixa de aviso</h2><label class="toggle-row"><input type="checkbox" id="announcement-enabled">Exibir aviso no topo</label><label>Texto do aviso<input data-path="announcement.text" maxlength="220"></label></section>
-        <section class="admin-card" id="projetos">
-          <div class="admin-card-title-row"><div><h2>Projetos</h2><p class="muted">Controle os projetos comerciais e técnicos em um banco SQL privado.</p></div><div class="db-summary"><span><b id="project-count">0</b> projetos</span></div></div>
-          <form id="project-form" class="form-grid db-form">
-            <input id="project-id" type="hidden"><label>Código<input id="project-code" maxlength="40" placeholder="GH-0001" required></label><label>Nome do projeto<input id="project-name" maxlength="120" required></label>
-            <label>Status<select id="project-status"><option value="planejamento">Planejamento</option><option value="orcamento">Orçamento</option><option value="aprovado">Aprovado</option><option value="em_andamento">Em andamento</option><option value="pausado">Pausado</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option></select></label>
-            <label>Tipo<input id="project-type" maxlength="80" placeholder="CFTV, alarme, automação..."></label><label>Local<input id="project-location" maxlength="160"></label><label>Data de início<input id="project-start" type="date"></label><label>Prazo<input id="project-due" type="date"></label>
-            <label class="span-2">Descrição<textarea id="project-description" rows="3" maxlength="1500"></textarea></label><label class="span-2">Observações internas<textarea id="project-notes" rows="3" maxlength="2000"></textarea></label>
-            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar projeto</button><button class="btn btn-ghost" id="project-cancel" type="button">Limpar</button></div>
+                <section class="admin-card" id="locais">
+          <div class="admin-card-title-row"><div><h2>Locais de instalação</h2><p class="muted">Cadastre imóveis, unidades, lojas, galpões, condomínios ou outros locais atendidos.</p></div><div class="db-summary"><span><b id="site-count">0</b> locais</span></div></div>
+          <form id="site-form" class="form-grid db-form">
+            <input id="site-id" type="hidden">
+            <label>Nome do local<input id="site-name" maxlength="120" placeholder="Casa cliente, Loja Centro..." required></label>
+            <label>Cliente principal<select id="site-customer"><option value="">Sem vínculo</option></select></label>
+            <label class="span-2">Endereço<input id="site-address" maxlength="220"></label>
+            <label>Cidade<input id="site-city" maxlength="100"></label><label>UF<input id="site-state" maxlength="30"></label>
+            <label>CEP<input id="site-postal" maxlength="20"></label><label>Tipo de imóvel<input id="site-property-type" maxlength="80" placeholder="Residência, comércio, condomínio..."></label>
+            <label class="span-2">Acesso e horários<textarea id="site-access-notes" rows="2" maxlength="1000"></textarea></label>
+            <label class="span-2">Infraestrutura existente<textarea id="site-infra-notes" rows="3" maxlength="1800" placeholder="Rede, energia, tubulação, racks, DVR/NVR existentes, restrições..."></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar local</button><button class="btn btn-ghost" id="site-cancel" type="button">Limpar</button></div>
           </form>
-          <div class="db-toolbar"><input id="project-search" placeholder="Buscar projeto, código, local ou status"><button class="btn btn-ghost" id="project-refresh" type="button">Atualizar</button></div>
-          <div class="table-wrap"><table class="db-table"><thead><tr><th>Código</th><th>Projeto</th><th>Status</th><th>Pessoas</th><th>Ações</th></tr></thead><tbody id="project-rows"></tbody></table></div>
+          <div class="db-toolbar"><input id="site-search" placeholder="Buscar local, cidade, endereço ou cliente"><button class="btn btn-ghost" id="site-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Local</th><th>Cliente</th><th>Cidade</th><th>Tipo</th><th>Ações</th></tr></thead><tbody id="site-rows"></tbody></table></div>
         </section>
 
-        <section class="admin-card" id="pessoas">
+        <section class="admin-card" id="projetos">
+          <div class="admin-card-title-row"><div><h2>Projetos</h2><p class="muted">Controle comercial, técnico e cronológico de cada instalação.</p></div><div class="db-summary"><span><b id="project-count">0</b> projetos</span></div></div>
+          <form id="project-form" class="form-grid db-form">
+            <input id="project-id" type="hidden">
+            <label>Código<input id="project-code" maxlength="40" placeholder="GH-0001" required></label><label>Nome do projeto<input id="project-name" maxlength="120" required></label>
+            <label>Status<select id="project-status"><option value="planejamento">Planejamento</option><option value="orcamento">Orçamento</option><option value="aprovado">Aprovado</option><option value="em_andamento">Em andamento</option><option value="pausado">Pausado</option><option value="concluido">Concluído</option><option value="cancelado">Cancelado</option></select></label>
+            <label>Prioridade<select id="project-priority"><option value="baixa">Baixa</option><option value="normal">Normal</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+            <label>Tipo / resumo<input id="project-type" maxlength="100" placeholder="CFTV + alarme + automação"></label><label>Local cadastrado<select id="project-site"><option value="">Sem vínculo</option></select></label>
+            <label>Local complementar<input id="project-location" maxlength="160"></label><label>Data de início<input id="project-start" type="date"></label><label>Prazo<input id="project-due" type="date"></label><label>Conclusão<input id="project-completed" type="date"></label>
+            <label class="span-2">Necessidade do cliente<textarea id="project-request" rows="3" maxlength="1800"></textarea></label>
+            <label class="span-2">Escopo aprovado<textarea id="project-scope" rows="3" maxlength="2200"></textarea></label>
+            <label class="span-2">Descrição técnica<textarea id="project-description" rows="3" maxlength="2200"></textarea></label>
+            <label>Valor orçado<input id="project-quoted" inputmode="decimal" placeholder="0,00"></label><label>Valor aprovado<input id="project-approved" inputmode="decimal" placeholder="0,00"></label>
+            <label>Situação de pagamento<select id="project-payment"><option value="nao_informado">Não informado</option><option value="pendente">Pendente</option><option value="parcial">Parcial</option><option value="pago">Pago</option><option value="cancelado">Cancelado</option></select></label>
+            <label class="span-2">Observações internas<textarea id="project-notes" rows="3" maxlength="2500"></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar projeto</button><button class="btn btn-ghost" id="project-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><input id="project-search" placeholder="Buscar projeto, código, local, sistema ou status"><button class="btn btn-ghost" id="project-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Código</th><th>Projeto</th><th>Status</th><th>Local</th><th>Sistemas</th><th>Ações</th></tr></thead><tbody id="project-rows"></tbody></table></div>
+        </section>
+
+<section class="admin-card" id="pessoas">
           <div class="admin-card-title-row"><div><h2>Pessoas</h2><p class="muted">Clientes, contatos, fornecedores e equipe. Cadastre apenas dados necessários e autorizados.</p></div><div class="db-summary"><span><b id="people-count">0</b> pessoas</span></div></div>
           <form id="person-form" class="form-grid db-form">
             <input id="person-id" type="hidden"><label>Nome<input id="person-name" maxlength="120" required></label><label>Tipo<select id="person-kind"><option value="cliente">Cliente</option><option value="contato">Contato</option><option value="fornecedor">Fornecedor</option><option value="equipe">Equipe</option><option value="outro">Outro</option></select></label>
@@ -118,7 +143,91 @@
           <div id="project-people-list" class="relation-list"></div>
         </section>
 
-        <section class="admin-card" id="seguranca"><h2>Segurança ativa</h2><div class="security-badges"><span>Senha</span><span>E-mail OTP</span><span>SMS OTP</span><span>Sessão em memória</span><span>Expiração por inatividade</span><span>Limite de tentativas</span><span>OTP protegido por HMAC</span><span>Secrets fora do site</span><span>Banco D1 privado</span><span>Auditoria de alterações</span></div><div class="security-status-grid"><div><small>Sessão</small><strong id="session-timer-card">controlada pelo servidor</strong></div><div><small>Última publicação registrada</small><strong id="last-publish-at">carregando…</strong></div></div><p class="muted">Telefone, e-mail, token do GitHub e segredos de autenticação ficam somente no backend. O token da sessão não é salvo no armazenamento do navegador: atualizar ou fechar o painel exige nova verificação completa.</p></section>
+                <section class="admin-card" id="sistemas">
+          <div class="admin-card-title-row"><div><h2>Sistemas do projeto</h2><p class="muted">Separe cada projeto por CFTV, alarme, automação, cerca elétrica, controle de acesso, interfonia, rede ou outros sistemas.</p></div><div class="db-summary"><span><b id="system-count">0</b> sistemas</span></div></div>
+          <form id="system-form" class="form-grid db-form">
+            <input id="system-id" type="hidden"><label>Projeto<select id="system-project" required></select></label>
+            <label>Tipo<select id="system-kind"><option value="cftv">Câmeras / CFTV</option><option value="alarme">Alarme</option><option value="automacao">Casa inteligente / automação</option><option value="cerca_eletrica">Cerca elétrica</option><option value="controle_acesso">Controle de acesso</option><option value="interfonia">Interfonia / vídeo porteiro</option><option value="rede">Rede / infraestrutura</option><option value="outro">Outro</option></select></label>
+            <label>Nome do sistema<input id="system-name" maxlength="120" placeholder="CFTV externo, alarme loja..." required></label><label>Área / setor<input id="system-area" maxlength="120"></label>
+            <label>Status<select id="system-status"><option value="planejamento">Planejamento</option><option value="instalacao">Instalação</option><option value="teste">Teste</option><option value="operacional">Operacional</option><option value="manutencao">Manutenção</option><option value="desativado">Desativado</option></select></label>
+            <label class="span-2">Descrição e finalidade<textarea id="system-description" rows="2" maxlength="1600"></textarea></label>
+            <label class="span-2">Especificações do projeto<textarea id="system-specs" rows="3" maxlength="2500" placeholder="Quantidade prevista, áreas cobertas, integrações, retenção, zonas, protocolos, requisitos..."></textarea></label>
+            <label class="span-2">Observações<textarea id="system-notes" rows="2" maxlength="1800"></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar sistema</button><button class="btn btn-ghost" id="system-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><select id="system-filter-project"></select><button class="btn btn-ghost" id="system-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Projeto</th><th>Tipo</th><th>Sistema</th><th>Área</th><th>Status</th><th>Ações</th></tr></thead><tbody id="system-rows"></tbody></table></div>
+        </section>
+
+        <section class="admin-card" id="equipamentos">
+          <div class="admin-card-title-row"><div><h2>Equipamentos instalados</h2><p class="muted">Inventário técnico por projeto. Não armazene senhas; use apenas uma referência para um cofre seguro de credenciais.</p></div><div class="db-summary"><span><b id="asset-count">0</b> equipamentos</span></div></div>
+          <form id="asset-form" class="form-grid db-form">
+            <input id="asset-id" type="hidden"><label>Projeto<select id="asset-project" required></select></label><label>Sistema<select id="asset-system"><option value="">Sem vínculo</option></select></label>
+            <label>Categoria<input id="asset-category" maxlength="100" placeholder="Câmera, DVR, NVR, sensor, central, relé, switch..."></label>
+            <label>Marca<input id="asset-brand" maxlength="100"></label><label>Modelo<input id="asset-model" maxlength="120"></label><label>Nº de série<input id="asset-serial" maxlength="120"></label>
+            <label>MAC<input id="asset-mac" maxlength="40"></label><label>IP<input id="asset-ip" maxlength="64"></label><label>VLAN<input id="asset-vlan" maxlength="40"></label><label>Canal/porta<input id="asset-channel" maxlength="60"></label>
+            <label>Local físico<input id="asset-location" maxlength="160"></label><label>Firmware<input id="asset-firmware" maxlength="100"></label><label>Alimentação<input id="asset-power" maxlength="100" placeholder="PoE, fonte, nobreak..."></label>
+            <label>Instalado em<input id="asset-installed" type="date"></label><label>Garantia até<input id="asset-warranty" type="date"></label>
+            <label>Status<select id="asset-status"><option value="planejado">Planejado</option><option value="instalado">Instalado</option><option value="operacional">Operacional</option><option value="manutencao">Em manutenção</option><option value="defeito">Com defeito</option><option value="substituido">Substituído</option><option value="retirado">Retirado</option></select></label>
+            <label>Referência de credencial<input id="asset-credential-ref" maxlength="160" placeholder="Ex.: Cofre/Projeto GH-0001/CFTV"></label>
+            <label class="span-2">Especificações<textarea id="asset-specs" rows="3" maxlength="2500" placeholder="Resolução/lente/áudio; zona/tipo de sensor; protocolo de automação; capacidade; integrações..."></textarea></label>
+            <label class="span-2">Observações<textarea id="asset-notes" rows="2" maxlength="1800"></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar equipamento</button><button class="btn btn-ghost" id="asset-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><select id="asset-filter-project"></select><input id="asset-search" placeholder="Buscar modelo, série, IP, MAC, local..."><button class="btn btn-ghost" id="asset-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Categoria</th><th>Equipamento</th><th>Identificação</th><th>Local</th><th>Status</th><th>Ações</th></tr></thead><tbody id="asset-rows"></tbody></table></div>
+        </section>
+
+        <section class="admin-card" id="registros">
+          <div class="admin-card-title-row"><div><h2>Dossiê técnico do projeto</h2><p class="muted">Guarde vistoria, rede, testes, checklists, fotos, documentos, garantia, entrega, treinamento e inspeções. Para cerca elétrica, registre somente dados técnicos, inspeções e conformidade; procedimentos energizados devem ser executados por profissional qualificado.</p></div><div class="db-summary"><span><b id="record-count">0</b> registros</span></div></div>
+          <form id="record-form" class="form-grid db-form">
+            <input id="record-id" type="hidden"><label>Projeto<select id="record-project" required></select></label>
+            <label>Categoria<select id="record-category"><option value="vistoria">Vistoria técnica</option><option value="rede">Rede / endereçamento / VLAN</option><option value="cabeamento">Cabeamento / infraestrutura</option><option value="checklist">Checklist</option><option value="teste">Teste / comissionamento</option><option value="foto">Foto / evidência</option><option value="documento">Documento / termo</option><option value="garantia">Garantia</option><option value="manutencao">Manutenção</option><option value="entrega">Entrega / aceite do cliente</option><option value="treinamento">Orientação / treinamento</option><option value="cerca_eletrica_inspecao">Inspeção de cerca elétrica</option><option value="observacao">Observação geral</option></select></label>
+            <label>Título<input id="record-title" maxlength="150" required></label><label>Status<input id="record-status" maxlength="80" placeholder="Pendente, aprovado, OK..."></label>
+            <label>Data<input id="record-date" type="date"></label><label>Área / setor<input id="record-area" maxlength="120"></label>
+            <label class="span-2">Detalhes<textarea id="record-details" rows="5" maxlength="5000" placeholder="Necessidades, medições, pontos, resultados de teste, observações, pendências, decisões do cliente..."></textarea></label>
+            <label class="span-2">Link de referência<input id="record-url" type="url" maxlength="500" placeholder="URL de foto/documento armazenado em local autorizado"></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar registro</button><button class="btn btn-ghost" id="record-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><select id="record-filter-project"></select><select id="record-filter-category"><option value="">Todas as categorias</option><option value="vistoria">Vistoria</option><option value="rede">Rede</option><option value="cabeamento">Cabeamento</option><option value="checklist">Checklist</option><option value="teste">Teste</option><option value="foto">Foto</option><option value="documento">Documento</option><option value="garantia">Garantia</option><option value="manutencao">Manutenção</option><option value="entrega">Entrega</option><option value="treinamento">Treinamento</option><option value="cerca_eletrica_inspecao">Cerca elétrica</option><option value="observacao">Observação</option></select><button class="btn btn-ghost" id="record-refresh" type="button">Atualizar</button></div>
+          <div id="record-list" class="relation-list"></div>
+        </section>
+
+        <section class="admin-card" id="materiais">
+          <div class="admin-card-title-row"><div><h2>Materiais e estoque</h2><p class="muted">Controle equipamentos, cabos, conectores, caixas, fontes, sensores e demais materiais usados nas instalações.</p></div><div class="db-summary"><span><b id="material-count">0</b> itens</span></div></div>
+          <form id="material-form" class="form-grid db-form">
+            <input id="material-id" type="hidden"><label>SKU / código<input id="material-sku" maxlength="80"></label><label>Nome<input id="material-name" maxlength="140" required></label>
+            <label>Categoria<input id="material-category" maxlength="100"></label><label>Marca<input id="material-brand" maxlength="100"></label><label>Modelo<input id="material-model" maxlength="120"></label>
+            <label>Unidade<input id="material-unit" maxlength="20" value="un"></label><label>Estoque atual<input id="material-stock" inputmode="decimal" value="0"></label><label>Estoque mínimo<input id="material-min-stock" inputmode="decimal" value="0"></label>
+            <label>Custo unitário<input id="material-cost" inputmode="decimal" value="0"></label><label>Fornecedor<select id="material-supplier"><option value="">Sem vínculo</option></select></label>
+            <label class="span-2">Observações<textarea id="material-notes" rows="2" maxlength="1600"></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar material</button><button class="btn btn-ghost" id="material-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><input id="material-search" placeholder="Buscar material, SKU, marca ou modelo"><button class="btn btn-ghost" id="material-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Item</th><th>Categoria</th><th>Estoque</th><th>Custo</th><th>Ações</th></tr></thead><tbody id="material-rows"></tbody></table></div>
+          <hr class="soft-separator">
+          <h3>Materiais usados por projeto</h3>
+          <form id="project-material-form" class="form-grid db-form"><label>Projeto<select id="pm-project" required></select></label><label>Material<select id="pm-material" required></select></label><label>Quantidade prevista<input id="pm-planned" inputmode="decimal" value="0"></label><label>Quantidade usada<input id="pm-used" inputmode="decimal" value="0"></label><label class="span-2">Observação<input id="pm-notes" maxlength="300"></label><div class="span-2 form-actions"><button class="btn" type="submit">Vincular / atualizar material</button></div></form>
+          <div id="project-material-list" class="relation-list"></div>
+        </section>
+
+        <section class="admin-card" id="servicos">
+          <div class="admin-card-title-row"><div><h2>Ordens, visitas e manutenção</h2><p class="muted">Registre instalação, visita técnica, manutenção preventiva/corretiva, retorno e próxima revisão.</p></div><div class="db-summary"><span><b id="service-count">0</b> ordens</span></div></div>
+          <form id="service-form" class="form-grid db-form">
+            <input id="service-id" type="hidden"><label>Projeto<select id="service-project"><option value="">Sem vínculo</option></select></label><label>Local<select id="service-site"><option value="">Sem vínculo</option></select></label>
+            <label>Tipo<select id="service-kind"><option value="instalacao">Instalação</option><option value="vistoria">Vistoria</option><option value="preventiva">Manutenção preventiva</option><option value="corretiva">Manutenção corretiva</option><option value="retorno">Retorno técnico</option><option value="expansao">Expansão</option><option value="outro">Outro</option></select></label>
+            <label>Status<select id="service-status"><option value="aberta">Aberta</option><option value="agendada">Agendada</option><option value="em_andamento">Em andamento</option><option value="concluida">Concluída</option><option value="cancelada">Cancelada</option></select></label>
+            <label>Agendada para<input id="service-scheduled" type="datetime-local"></label><label>Início<input id="service-started" type="datetime-local"></label><label>Fim<input id="service-finished" type="datetime-local"></label><label>Próxima manutenção<input id="service-next" type="date"></label>
+            <label class="span-2">Resumo do serviço<textarea id="service-summary" rows="2" maxlength="1600"></textarea></label>
+            <label class="span-2">Relato técnico<textarea id="service-tech-notes" rows="3" maxlength="2500"></textarea></label>
+            <label class="span-2">Observação / aceite do cliente<textarea id="service-customer-notes" rows="2" maxlength="1600"></textarea></label>
+            <div class="span-2 form-actions"><button class="btn" type="submit">Salvar ordem</button><button class="btn btn-ghost" id="service-cancel" type="button">Limpar</button></div>
+          </form>
+          <div class="db-toolbar"><select id="service-filter-status"><option value="">Todos os status</option><option value="aberta">Aberta</option><option value="agendada">Agendada</option><option value="em_andamento">Em andamento</option><option value="concluida">Concluída</option><option value="cancelada">Cancelada</option></select><button class="btn btn-ghost" id="service-refresh" type="button">Atualizar</button></div>
+          <div class="table-wrap"><table class="db-table"><thead><tr><th>Tipo</th><th>Projeto/local</th><th>Agendamento</th><th>Status</th><th>Próxima manutenção</th><th>Ações</th></tr></thead><tbody id="service-rows"></tbody></table></div>
+        </section>
+
+<section class="admin-card" id="seguranca"><h2>Segurança ativa</h2><div class="security-badges"><span>Senha</span><span>E-mail OTP</span><span>SMS OTP</span><span>Sessão em memória</span><span>Expiração por inatividade</span><span>Limite de tentativas</span><span>OTP protegido por HMAC</span><span>Secrets fora do site</span><span>Banco D1 privado</span><span>Auditoria de alterações</span></div><div class="security-status-grid"><div><small>Sessão</small><strong id="session-timer-card">controlada pelo servidor</strong></div><div><small>Última publicação registrada</small><strong id="last-publish-at">carregando…</strong></div></div><p class="muted">Telefone, e-mail, token do GitHub e segredos de autenticação ficam somente no backend. O token da sessão não é salvo no armazenamento do navegador: atualizar ou fechar o painel exige nova verificação completa.</p></section>
         <section class="admin-card admin-publish"><h2>Salvar e publicar</h2><p>A publicação só é aceita pelo backend se esta sessão tiver concluído as três etapas.</p><div class="publish-buttons"><button class="btn" id="publish-btn">Salvar e publicar agora</button><button class="btn btn-ghost" id="export-btn">Baixar backup</button><button class="btn btn-ghost" id="reload-published-btn">Carregar versão publicada</button><button class="btn btn-ghost" id="reset-btn">Restaurar padrão</button></div><div class="publish-status" id="publish-status" role="status" aria-live="polite">Sessão autenticada.</div><small id="save-status">Alterações locais são salvas automaticamente neste navegador.</small></section>
       </section>
     </main>
