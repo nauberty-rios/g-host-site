@@ -3,9 +3,20 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="description" content="G-Host Segurança Eletrônica e Automação. Câmeras, alarmes, manutenção e automação residencial.">
+  <meta name="description" content="G-Host Segurança Eletrônica e Automação. Instalação de câmeras, alarmes, manutenção, controle de acesso e automação residencial.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#07111f">
+  <meta name="color-scheme" content="dark">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="G-Host | Segurança Eletrônica & Automação">
+  <meta property="og:description" content="Câmeras, alarmes, manutenção, controle de acesso e automação em um projeto organizado e sob medida.">
+  <meta property="og:site_name" content="G-Host">
+  <meta name="twitter:card" content="summary">
   <title>G-Host | Segurança Eletrônica & Automação</title>
+  <link rel="manifest" href="site.webmanifest">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script src="site-data.js"></script>
@@ -40,13 +51,13 @@
         </div>
 
         <div class="hero-console" aria-label="Painel demonstrativo de segurança">
-          <div class="console-top"><span><i class="live-dot"></i> Sistema operacional</span><span id="clock">--:--</span></div>
+          <div class="console-top"><span><i class="live-dot"></i> Painel demonstrativo</span><span id="clock">--:--</span></div>
           <div class="security-map">
             <div class="map-grid"></div>
             <div class="shield-core"><svg viewBox="0 0 120 140" aria-hidden="true"><path d="M60 5 110 25v38c0 34-20 58-50 72C30 121 10 97 10 63V25L60 5Z"/><path d="m36 70 16 16 34-38"/></svg></div>
             <span class="node n1"></span><span class="node n2"></span><span class="node n3"></span><span class="node n4"></span><div class="radar-sweep"></div>
           </div>
-          <div class="console-status"><div><small>CFTV</small><strong>Online</strong></div><div><small>Alarmes</small><strong>Ativos</strong></div><div><small>Automação</small><strong>Conectada</strong></div></div>
+          <div class="console-status"><div><small>CFTV</small><strong>Monitoramento</strong></div><div><small>Alarmes</small><strong>Integração</strong></div><div><small>Automação</small><strong>Controle</strong></div></div>
         </div>
       </div>
       <div class="container stats" id="stats"></div>
@@ -68,18 +79,21 @@
 
     <section class="section section-muted" id="processo"><div class="container"><div class="section-heading center"><span class="eyebrow">Processo G-Host</span><h2>Do planejamento ao suporte.</h2></div><div class="process-grid" id="process-grid"></div></div></section>
 
+    <div id="custom-sections"></div>
+
     <section class="section"><div class="container simulator"><div><span class="eyebrow">Simulador rápido</span><h2>Qual solução combina com sua necessidade?</h2><p>Marque o que você precisa e veja uma sugestão inicial. A avaliação técnica define o projeto final.</p></div><div class="simulator-box"><label class="check"><input type="checkbox" data-sim="Câmeras"><span></span>Câmeras</label><label class="check"><input type="checkbox" data-sim="Alarmes"><span></span>Alarmes</label><label class="check"><input type="checkbox" data-sim="Automação"><span></span>Automação</label><label class="check"><input type="checkbox" data-sim="Manutenção"><span></span>Manutenção</label><div class="sim-result"><small>Sugestão</small><strong id="sim-result">Selecione uma ou mais soluções</strong></div></div></div></section>
 
     <section class="section section-muted" id="faq"><div class="container faq-grid"><div class="section-heading"><span class="eyebrow">Dúvidas frequentes</span><h2>Informação clara antes de contratar.</h2></div><div class="accordion" id="faq-list"></div></div></section>
 
     <section class="section" id="contato">
       <div class="container contact-panel">
-        <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-info"><span><small>Telefone</small><b data-phone-display></b></span><span><small>E-mail</small><b data-email></b></span><span><small>Atendimento</small><b data-location></b></span></div></div>
-        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option></select></label><label>Mensagem<textarea id="message" required rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note">Nenhum dado é armazenado pelo site.</small></form>
+        <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-info"><span><small>Telefone</small><a data-phone-link data-phone-display></a></span><span><small>E-mail</small><a data-email-link data-email></a></span><span><small>Atendimento</small><b data-location></b></span></div></div>
+        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">Nenhum dado é armazenado pelo site.</small></form>
       </div>
     </section>
   </main>
 
-  <footer class="footer"><div class="container footer-grid"><div class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong data-company-name></strong><small data-company-tagline></small></span></div><p>© <span id="year"></span> <span data-company-name></span>. Todos os direitos reservados.</p><a class="owner-link" href="admin.html" rel="nofollow">Área do proprietário</a></div></footer>
+  <footer class="footer"><div class="container footer-grid"><div class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong data-company-name></strong><small data-company-tagline></small></span></div><p>© <span id="year"></span> <span data-company-name></span>. Todos os direitos reservados.</p></div></footer>
+  <noscript><div class="noscript-banner">Ative o JavaScript para carregar os dados e interações do site.</div></noscript>
 </body>
 </html>

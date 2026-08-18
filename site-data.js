@@ -20,9 +20,9 @@ window.SITE_DATA = {
     secondaryButton: "Conhecer soluções"
   },
   stats: [
-    { value: "24h", label: "monitoramento disponível" },
-    { value: "100%", label: "projeto personalizado" },
-    { value: "1", label: "solução integrada" }
+    { value: "100%", label: "projeto pensado para a necessidade do cliente" },
+    { value: "3", label: "frentes integradas: segurança, controle e automação" },
+    { value: "1", label: "estrutura centralizada para suporte e expansão" }
   ],
   services: [
     { id:"cameras", enabled:true, icon:"camera", title:"Câmeras e CFTV", description:"Projeto, instalação e configuração de câmeras, DVR/NVR, gravação, visão noturna e acesso remoto.", features:["Pontos estratégicos","Acesso pelo celular","Gravação e armazenamento"] },
@@ -47,6 +47,9 @@ window.SITE_DATA = {
     { q:"Vocês fazem manutenção em sistemas já instalados?", a:"Sim. Realizamos manutenção preventiva e corretiva, inclusive em sistemas instalados por terceiros, após avaliação técnica." },
     { q:"Posso integrar câmeras, alarmes e automação?", a:"Dependendo dos equipamentos e da infraestrutura, podemos projetar uma solução integrada e centralizada." },
     { q:"O orçamento é igual para todos?", a:"Não. Cada imóvel tem necessidades diferentes; por isso trabalhamos com avaliação e projeto personalizado." }
+  ],
+  customSections: [
+    { id:"diferenciais", enabled:true, eyebrow:"Diferenciais", title:"Projeto organizado do início ao suporte.", body:"Use este espaço para publicar informações próprias da G-Host. No painel você pode criar, editar, reordenar ou remover blocos de conteúdo sem alterar o HTML.", muted:false }
   ],
   contact: { title:"Fale com a G-Host", text:"Conte o que você precisa e prepare uma mensagem de orçamento diretamente para o WhatsApp." }
 };

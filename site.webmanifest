@@ -1,0 +1,18 @@
+{
+  "name": "G-Host Segurança Eletrônica & Automação",
+  "short_name": "G-Host",
+  "description": "Segurança eletrônica, manutenção, controle de acesso e automação.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#050b14",
+  "theme_color": "#07111f",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
