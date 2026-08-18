@@ -208,31 +208,62 @@
     }
   });
 
-  stepEmail.addEventListener("submit", async event => {
+    stepEmail.addEventListener("submit", async event => {
     event.preventDefault();
+
     const codeInput = document.getElementById("email-code");
     const code = codeInput.value.replace(/\D/g, "");
+
     if (code.length !== 6 || !challengeId) {
       setStatus("Digite os 6 números recebidos por e-mail.", "error");
       return;
     }
 
-    setStatus("Confirmando e-mail e enviando SMS...", "busy");
+    setStatus("Confirmando e-mail e preparando autenticador...", "busy");
+
     const button = event.submitter;
     if (button) button.disabled = true;
+
     try {
       const result = await api("/auth/email/verify", {
         method: "POST",
         body: JSON.stringify({ challengeId, code })
       });
+
       codeInput.value = "";
-      phoneTarget.textContent = result.maskedPhone || "telefone cadastrado";
+
+      if (result.setupSecret) {
+        phoneTarget.textContent =
+          `Chave de configuração: ${result.setupSecret}`;
+
+        setStatus(
+          "2ª etapa concluída. Adicione essa chave ao aplicativo autenticador e digite o código de 6 números.",
+          "success"
+        );
+      } else {
+        phoneTarget.textContent =
+          "Aplicativo autenticador já configurado";
+
+        setStatus(
+          "2ª etapa concluída. Digite o código de 6 números do aplicativo autenticador.",
+          "success"
+        );
+      }
+
       showStep(stepSms);
-      setStatus("2ª etapa concluída. Digite o código enviado por SMS.", "success");
-      document.getElementById("sms-code").focus();
+
+      const authenticatorInput =
+        document.getElementById("sms-code");
+
+      if (authenticatorInput) {
+        authenticatorInput.value = "";
+        authenticatorInput.focus();
+      }
+
     } catch (error) {
       codeInput.value = "";
       setStatus(error.message, "error");
+
     } finally {
       if (button) button.disabled = false;
     }
@@ -240,36 +271,62 @@
 
   stepSms.addEventListener("submit", async event => {
     event.preventDefault();
-    const codeInput = document.getElementById("sms-code");
-    const code = codeInput.value.replace(/\D/g, "");
-    if (code.length < 4 || code.length > 10 || !challengeId) {
-      setStatus("Digite o código recebido por SMS.", "error");
+
+    const codeInput =
+      document.getElementById("sms-code");
+
+    const code =
+      codeInput.value.replace(/\D/g, "");
+
+    if (code.length !== 6 || !challengeId) {
+      setStatus(
+        "Digite os 6 números do aplicativo autenticador.",
+        "error"
+      );
       return;
     }
 
     setStatus("Concluindo a autenticação...", "busy");
+
     const button = event.submitter;
     if (button) button.disabled = true;
+
     try {
-      const result = await api("/auth/sms/verify", {
+      const result = await api("/auth/totp/verify", {
         method: "POST",
         body: JSON.stringify({ challengeId, code })
       });
+
       token = result.token || "";
-      expiresAt = Number(result.expiresAt || (Date.now() + Number(result.expiresIn || 1800) * 1000));
+
+      expiresAt = Number(
+        result.expiresAt ||
+        (
+          Date.now() +
+          Number(result.expiresIn || 1800) * 1000
+        )
+      );
+
       challengeId = "";
       codeInput.value = "";
-      if (!token) throw new Error("O servidor não criou uma sessão válida.");
+
+      if (!token) {
+        throw new Error(
+          "O servidor não criou uma sessão válida."
+        );
+      }
+
       setStatus("Acesso autorizado.", "success");
       unlockAdmin();
+
     } catch (error) {
       codeInput.value = "";
       setStatus(error.message, "error");
+
     } finally {
       if (button) button.disabled = false;
     }
   });
-
   document.getElementById("restart-auth").addEventListener("click", () => {
     challengeId = "";
     resetForms();
