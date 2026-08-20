@@ -8,7 +8,7 @@
   <meta name="referrer" content="no-referrer">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://*.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
 
-  <title>G-Host | Acesso do Proprietário</title>
+  <title>G-Host | Acesso ADM</title>
 
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
@@ -17,13 +17,13 @@
 
   <script src="site-data.js"></script>
   <script src="auth-config.js"></script>
-  <script defer src="admin-auth.js"></script>
+  <script defer src="staff-auth.js"></script>
   <script defer src="admin.js"></script>
   <script defer src="database.js"></script>
   <script defer src="platform-admin.js"></script>
 </head>
 
-<body class="admin-body">
+<body class="admin-body" data-control-mode="staff">
 
   <section
     class="auth-shell"
@@ -82,7 +82,7 @@
         </div>
 
         <h2>
-          Senha do proprietário
+          Senha do ADM
         </h2>
 
         <label>
@@ -303,15 +303,15 @@
           Conteúdo manual
         </a>
 
-        <a href="planos-admin.html">
+        <a href="staff-planos.html">
           Planos e promoções
         </a>
 
-        <a href="catalogo-admin.html">
+        <a href="staff-catalogo.html">
           Catálogo e autoatendimento
         </a>
 
-        <a href="visibilidade-admin.html">
+        <a href="staff-visibilidade.html">
           Visibilidade do site
         </a>
 
@@ -385,7 +385,7 @@
           </span>
 
           <h1>
-            Painel do proprietário
+            Painel ADM
           </h1>
 
           <p>

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#07111f">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://g-host-secure.naubertymoraes13.workers.dev; media-src 'self' blob: https:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
+  <title>G-Host | Minha G-Host</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="cliente.css">
+  <script src="client-config.js"></script>
+  <script defer src="cliente.js"></script>
+</head>
+<body class="client-body">
+  <header class="client-topbar">
+    <div class="container client-topbar-inner">
+      <a class="brand" href="index.html" aria-label="Voltar ao site G-Host">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span>
+        <span class="brand-copy"><strong>G-Host</strong><small>Minha G-Host</small></span>
+      </a>
+      <div class="client-top-actions"><span id="client-role" class="role-badge" hidden></span><button class="btn btn-ghost btn-small" id="client-logout" type="button" hidden>Sair</button></div>
+    </div>
+  </header>
+
+  <main class="container client-main">
+    <section id="client-auth" class="client-auth-grid">
+      <div class="client-intro">
+        <span class="eyebrow">Minha G-Host</span>
+        <h1>Seu projeto e sua proteção em um só lugar.</h1>
+        <p>Crie sua conta, monte um projeto, acompanhe propostas e, após a contratação, veja equipamentos, manutenções, Guardião, Horus, Sentinela e os recursos CFTV autorizados.</p>
+        <div class="client-trust"><span>Conta individual</span><span>Dados separados por cliente</span><span>Dispositivos CFTV autorizados</span><span>Contratos e evidências</span></div>
+      </div>
+
+      <div class="client-auth-card">
+        <div class="client-tabs" role="tablist" aria-label="Acesso G-Host">
+          <button id="tab-login" class="client-tab active" type="button">Entrar</button>
+          <button id="tab-register" class="client-tab" type="button">Criar conta</button>
+          <button id="tab-reset" class="client-tab" type="button">Recuperar</button>
+        </div>
+
+        <form id="client-login-form" class="client-form" autocomplete="on">
+          <h2>Entrar</h2>
+          <label>E-mail<input id="login-email" type="email" autocomplete="email" maxlength="160" required></label>
+          <label>Senha<input id="login-password" type="password" autocomplete="current-password" minlength="12" maxlength="128" required></label>
+          <button class="btn" type="submit">Entrar na Minha G-Host</button>
+        </form>
+
+        <form id="client-register-form" class="client-form" hidden autocomplete="on">
+          <h2>Criar conta</h2>
+          <p class="muted">Toda conta nova começa como Visitante. O Dono da G-Host libera o perfil Cliente após a contratação.</p>
+          <label>Nome completo<input id="register-name" autocomplete="name" maxlength="120" required></label>
+          <label>E-mail<input id="register-email" type="email" autocomplete="email" maxlength="160" required></label>
+          <label>Telefone<input id="register-phone" inputmode="tel" autocomplete="tel" maxlength="40"></label>
+          <label>Senha<input id="register-password" type="password" autocomplete="new-password" minlength="12" maxlength="128" required></label>
+          <small class="muted">Use pelo menos 12 caracteres e não reutilize uma senha importante.</small>
+          <label class="legal-check"><input id="accept-terms" type="checkbox" required><span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a>.</span></label>
+          <label class="legal-check"><input id="ack-privacy" type="checkbox" required><span>Li o <a href="privacidade.html" target="_blank" rel="noopener">Aviso de Privacidade</a> e estou ciente do tratamento necessário para criar e operar minha conta.</span></label>
+          <button class="btn" type="submit">Enviar código de confirmação</button>
+        </form>
+
+        <form id="client-verify-form" class="client-form" hidden autocomplete="off">
+          <h2>Confirmar e-mail</h2>
+          <p class="muted">Digite o código de 6 dígitos enviado para <strong id="verify-email-target">seu e-mail</strong>.</p>
+          <label>Código<input id="register-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required></label>
+          <button class="btn" type="submit">Confirmar conta</button>
+          <button class="text-button" id="cancel-verify" type="button">Voltar</button>
+        </form>
+
+        <form id="client-reset-form" class="client-form" hidden autocomplete="off">
+          <h2>Recuperar acesso</h2>
+          <label>E-mail<input id="reset-email" type="email" autocomplete="email" maxlength="160" required></label>
+          <button class="btn" type="submit">Enviar código</button>
+        </form>
+
+        <form id="client-reset-verify-form" class="client-form" hidden autocomplete="off">
+          <h2>Nova senha</h2>
+          <label>Código<input id="reset-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></label>
+          <label>Nova senha<input id="reset-password" type="password" minlength="12" maxlength="128" autocomplete="new-password" required></label>
+          <button class="btn" type="submit">Alterar senha</button>
+        </form>
+
+        <div id="client-auth-status" class="client-status" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section id="client-dashboard" hidden>
+      <div class="client-heading-row">
+        <div><span class="eyebrow">Minha G-Host</span><h1 id="client-welcome">Olá.</h1><p id="client-account-info" class="muted"></p></div>
+        <div class="client-heading-actions"><a class="btn btn-ghost" id="client-admin-link" href="staff.html" hidden>Painel ADM</a><a class="btn btn-ghost" href="index.html#configurador">Montar projeto</a><button class="btn btn-ghost" id="client-refresh" type="button">Atualizar</button></div>
+      </div>
+
+      <div class="client-summary-grid">
+        <article class="client-summary-card"><small>Projetos</small><strong id="client-project-count">0</strong><span>vinculados</span></article>
+        <article class="client-summary-card"><small>Equipamentos</small><strong id="client-asset-count">0</strong><span>registrados</span></article>
+        <article class="client-summary-card"><small>Chamados/serviços</small><strong id="client-service-count">0</strong><span>em histórico</span></article>
+        <article class="client-summary-card"><small>Notificações</small><strong id="client-notification-count">0</strong><span>recentes</span></article>
+      </div>
+
+      <nav class="portal-nav" aria-label="Seções da área do cliente">
+        <a href="#projetos">Projetos</a><a href="#operacao">Operação</a><a href="#guardiao">Guardião</a><a href="#cftv">CFTV</a><a href="#devices">Aparelhos</a><a href="#suporte">Suporte</a><a class="portal-nav-emergency" href="#emergencia">Emergência</a>
+      </nav>
+
+      <section class="client-panel" id="projetos">
+        <div class="client-panel-title"><div><span class="eyebrow">Autoatendimento</span><h2>Meus projetos e propostas</h2></div><a class="btn btn-small" href="index.html#configurador">Novo projeto</a></div>
+        <div class="split-panels"><div><h3>Configurações salvas</h3><div id="client-configurations" class="client-list"></div></div><div><h3>Propostas solicitadas</h3><div id="client-quotes" class="client-list"></div></div></div>
+      </section>
+
+      <section class="client-panel" id="operacao">
+        <div class="client-panel-title"><div><span class="eyebrow">Cliente contratado</span><h2>Projetos, equipamentos e manutenção</h2></div></div>
+        <div id="visitor-upgrade-note" class="client-notice" hidden>Seu perfil ainda é <strong>Visitante</strong>. Você pode montar e salvar projetos. Após a contratação, a G-Host libera o perfil Cliente e os dados operacionais do seu imóvel.</div>
+        <h3>Projetos</h3><div id="client-projects" class="client-list"></div>
+        <h3>Equipamentos</h3><div id="client-assets" class="client-list"></div>
+        <h3>Serviços e manutenção</h3><div id="client-services" class="client-list"></div>
+        <h3>Contratos</h3><div id="client-contracts" class="client-list"></div>
+      </section>
+
+      <section class="client-panel" id="guardiao">
+        <div class="client-panel-title"><div><span class="eyebrow">Ecossistema local</span><h2>Guardião · Horus · Sentinela</h2></div><span class="client-badge">Local-first</span></div>
+        <div id="guardian-nodes" class="client-list"></div>
+        <h3>Eventos recentes</h3><div id="guardian-events" class="client-list"></div>
+        <p class="muted">Os módulos reais dependem do Guardião Hub instalado e provisionado. Esta tela não simula equipamentos inexistentes.</p>
+      </section>
+
+      <section class="client-panel camera-panel" id="cftv">
+        <div class="client-panel-title"><div><span class="eyebrow">CFTV seguro</span><h2>Minhas câmeras</h2></div><span class="client-badge" id="camera-device-state">Aparelho não verificado</span></div>
+        <p class="muted">Antes de liberar câmeras, a G-Host verifica a conta e um aparelho autorizado. O limite padrão é definido no contrato e pode ser administrado pelo Dono.</p>
+        <button class="btn" id="authorize-camera-device" type="button">Autorizar este aparelho para CFTV</button>
+        <div id="client-cameras" class="camera-grid"></div>
+      </section>
+
+      <section class="client-panel" id="devices">
+        <div class="client-panel-title"><div><span class="eyebrow">Segurança da conta</span><h2>Aparelhos autorizados</h2></div><span id="device-limit-label" class="client-badge"></span></div>
+        <div id="client-devices" class="client-list"></div>
+      </section>
+
+      <section class="client-panel" id="notifications">
+        <div class="client-panel-title"><div><span class="eyebrow">Alertas</span><h2>Notificações</h2></div><button class="btn btn-ghost btn-small" id="notifications-read" type="button">Marcar como lidas</button></div>
+        <div id="client-notifications" class="client-list"></div>
+      </section>
+
+      <section class="client-panel" id="suporte">
+        <div class="client-panel-title"><div><span class="eyebrow">Atendimento</span><h2>Abrir chamado</h2></div></div>
+        <form id="support-form" class="client-form inline-form">
+          <label>Assunto<input id="support-subject" maxlength="150" required></label>
+          <label>Prioridade<select id="support-priority"><option value="normal">Normal</option><option value="baixa">Baixa</option><option value="alta">Alta</option><option value="urgente">Urgente</option></select></label>
+          <label class="wide">Descrição<textarea id="support-description" rows="4" maxlength="3000" required></textarea></label>
+          <button class="btn" type="submit">Abrir chamado</button>
+        </form>
+        <h3>Meus chamados</h3><div id="client-support-tickets" class="client-list"></div>
+      </section>
+
+      <section class="client-panel emergency-panel" id="emergencia">
+        <div class="client-panel-title"><div><span class="eyebrow">Central de emergência</span><h2>Ajuda rápida</h2></div><span class="danger-badge">EMERGÊNCIA</span></div>
+        <p>Use os serviços oficiais quando houver uma emergência real. A G-Host não despacha viaturas automaticamente.</p>
+        <div class="emergency-actions"><a class="emergency-button" href="tel:190"><strong>190</strong><span>Polícia Militar</span></a><a class="emergency-button" href="tel:192"><strong>192</strong><span>SAMU</span></a><a class="emergency-button" href="tel:193"><strong>193</strong><span>Bombeiros</span></a></div>
+        <button class="btn btn-ghost" id="get-location" type="button">Mostrar minha localização neste aparelho</button>
+        <div id="location-result" class="location-result" hidden></div>
+        <h3>Contatos de emergência</h3>
+        <form id="emergency-contact-form" class="client-form inline-form"><label>Nome<input id="emergency-name" maxlength="100" required></label><label>Relação<input id="emergency-relation" maxlength="80"></label><label>Telefone<input id="emergency-phone" maxlength="40" inputmode="tel" required></label><button class="btn btn-ghost" type="submit">Adicionar contato</button></form>
+        <div id="emergency-contacts" class="client-list"></div>
+      </section>
+
+      <div id="client-dashboard-status" class="client-status" role="status" aria-live="polite"></div>
+    </section>
+  </main>
+</body>
+</html>

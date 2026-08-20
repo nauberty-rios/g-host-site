@@ -1,4 +1,4 @@
-# COMO COLOCAR ESTA VERSÃO NO GITHUB
+# Como colocar esta versão no GitHub
 
 ## 1. Faça backup
 
@@ -8,30 +8,36 @@ GitHub → `nauberty-rios/g-host-site` → **Código** → **Baixar ZIP**.
 
 GitHub → `nauberty-rios/g-host-site` → **Código** → **Adicionar arquivo** → **Carregar arquivos**.
 
-Envie o conteúdo desta pasta mantendo a pasta `publisher-worker`.
+Abra a pasta `G-HOST-PLATAFORMA-INTEGRADA` no computador e envie **os arquivos que estão dentro dela**. Não envie a pasta externa como `/G-HOST-PLATAFORMA-INTEGRADA/...`.
+
+A pasta `publisher-worker` deve continuar como subpasta.
 
 Confirme o commit na branch `main`.
 
 ## 3. GitHub Pages
 
-GitHub → `g-host-site` → **Configurações** → **Pages** → confirme publicação pela branch `main` e pasta `/ (root)`.
+GitHub → `g-host-site` → **Configurações** → **Pages** → confirme branch `main` e pasta `/ (root)`.
 
-## 4. Atualize o Worker na Cloudflare
+Teste:
+- `index.html`
+- `cliente.html`
+- `admin.html`
+- `staff.html`
 
-Cloudflare → **Workers & Pages** → `g-host-secure` → **Editar código**.
+## 4. Só depois atualize Cloudflare
 
-Substitua pelo arquivo `publisher-worker/worker.js`, implante e mantenha os bindings/secrets atuais.
+A ordem completa está em `CHECKLIST-DEPLOY.md`:
 
-Os novos painéis precisam dos endpoints `/publish-catalog` e `/publish-visibility` presentes nesta versão.
+1. arquivos no GitHub;
+2. migração D1;
+3. Worker;
+4. testes de Dono, ADM, cliente, contrato e CFTV.
 
-## 5. Teste nesta ordem
+Não atualize o Worker antes de aplicar a migração D1 desta versão.
 
-1. Abra `/health` do Worker.
-2. Abra `planos-admin.html` e conclua senha + e-mail + TOTP.
-3. Abra `catalogo-admin.html`, altere somente um item e publique.
-4. Abra `visibilidade-admin.html`, oculte/mostre uma seção e publique.
-5. Abra `index.html` em aba anônima e confirme o autoatendimento.
+## Validação automática
+Após o upload/commit, acesse:
 
-## Observação
+`GitHub → g-host-site → Actions → Validar G-Host`
 
-A integração do ChatGPT com o GitHub não possui permissão de escrita neste repositório no momento; por isso o pacote foi preparado para upload manual.
+Só prossiga para D1/Cloudflare quando o job estiver verde. Se ficar vermelho, abra a execução para ver exatamente qual arquivo falhou.

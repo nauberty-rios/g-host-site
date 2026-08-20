@@ -50,6 +50,8 @@
 
   const init = () => {
     if (initialized) return;
+    const ctx = window.GHOST_CONTROL_CONTEXT || { kind: "owner", permissions: { all: true } };
+    if (ctx.kind === "staff" && ctx.permissions?.site_edit !== true) return;
     initialized = true;
 
     const defaults = clone(window.SITE_DATA || {});

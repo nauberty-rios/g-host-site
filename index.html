@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#07111f">
   <meta name="color-scheme" content="dark">
   <meta name="referrer" content="strict-origin-when-cross-origin">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://g-host-secure.naubertymoraes13.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:type" content="website">
   <meta property="og:title" content="G-Host | Segurança Eletrônica & Automação">
@@ -21,14 +21,18 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="plans.css">
   <link rel="stylesheet" href="configurator.css">
+  <link rel="stylesheet" href="consent.css">
   <script src="site-data.js"></script>
   <script src="plans-data.js"></script>
   <script src="catalog-data.js"></script>
   <script src="visibility-data.js"></script>
+  <script src="client-config.js"></script>
   <script defer src="app.js"></script>
   <script defer src="plans.js"></script>
   <script defer src="configurator.js"></script>
   <script defer src="visibility.js"></script>
+  <script defer src="consent.js"></script>
+  <script defer src="analytics.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -42,7 +46,7 @@
       </a>
       <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menu"><span></span><span></span><span></span></button>
       <div class="nav-links" id="nav-links">
-        <a href="#solucoes" data-nav-target="solucoes">Soluções</a><a href="#planos" data-nav-target="planos">Planos</a><a href="#configurador" data-nav-target="configurador">Monte seu projeto</a><a href="#empresa" data-nav-target="empresa">Empresa</a><a href="#processo" data-nav-target="processo">Como funciona</a><a href="#faq" data-nav-target="faq">Dúvidas</a><a class="btn btn-small" href="#contato" data-nav-target="contato">Orçamento</a>
+        <a href="#solucoes" data-nav-target="solucoes">Soluções</a><a href="#planos" data-nav-target="planos">Planos</a><a href="#configurador" data-nav-target="configurador">Monte seu projeto</a><a href="#empresa" data-nav-target="empresa">Empresa</a><a href="#processo" data-nav-target="processo">Como funciona</a><a href="#faq" data-nav-target="faq">Dúvidas</a><a href="cliente.html" id="client-area-link" data-nav-target="areaCliente">Área do Cliente</a><a class="btn btn-small" href="#contato" data-nav-target="contato">Orçamento</a>
       </div>
     </nav>
   </header>
@@ -54,7 +58,7 @@
           <span class="eyebrow" id="hero-eyebrow"></span>
           <h1 id="hero-title"></h1>
           <p id="hero-description"></p>
-          <div class="hero-actions"><a class="btn" href="#contato" id="hero-primary"></a><a class="btn btn-ghost" href="#solucoes" id="hero-secondary"></a></div>
+          <div class="hero-actions"><a class="btn" href="#configurador" id="hero-primary"></a><a class="btn btn-ghost" href="#planos" id="hero-secondary"></a></div>
           <div class="trust-row"><span>Projeto sob medida</span><span>Suporte técnico</span><span>Acesso remoto</span></div>
         </div>
 
@@ -106,6 +110,20 @@
       </div>
     </section>
 
+    <section class="section section-muted" id="plataforma" data-visibility-key="plataforma">
+      <div class="container">
+        <div class="section-heading"><span class="eyebrow">Plataforma de verdade</span><h2>Do orçamento ao pós-instalação no mesmo ambiente.</h2><p>A G-Host já foi estruturada para que o cliente monte a solução, acompanhe o projeto e tenha uma área protegida. Recursos físicos e de IA só aparecem como operacionais quando estiverem realmente implantados.</p></div>
+        <div class="platform-proof-grid">
+          <article><b>01</b><h3>Autoatendimento</h3><p>Escolha plano, serviços e quantidades e salve uma pré-configuração antes da avaliação técnica.</p></article>
+          <article><b>02</b><h3>Minha G-Host</h3><p>Conta própria para projetos, equipamentos, manutenção, notificações, suporte e contratos vinculados.</p></article>
+          <article><b>03</b><h3>Contratos protegidos</h3><p>Versão e hash do documento, conta autenticada e confirmação adicional por código de e-mail no aceite.</p></article>
+          <article><b>04</b><h3>Controle de CFTV</h3><p>Aparelhos autorizados por conta, limite contratual e bloqueio de acessos não autorizados antes do streaming.</p></article>
+          <article><b>05</b><h3>Segurança & auditoria</h3><p>Dono e ADM usam autenticação forte, permissões separadas e eventos administrativos auditáveis.</p></article>
+          <article><b>06</b><h3>Emergência</h3><p>Atalhos para 190, 192 e 193, contatos cadastrados e localização somente quando o usuário autorizar.</p></article>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="empresa" data-visibility-key="empresa">
       <div class="container about-grid">
         <div class="about-visual"><div class="system-card"><span class="system-label">ECOSSISTEMA G-HOST</span><div class="system-row"><span>Câmeras</span><b>01</b></div><div class="system-row"><span>Alarmes</span><b>02</b></div><div class="system-row"><span>Automação</span><b>03</b></div><div class="system-row"><span>Manutenção</span><b>04</b></div><div class="system-line"></div><small>Uma estrutura pensada para crescer com a necessidade do cliente.</small></div></div>
@@ -124,7 +142,7 @@
     <section class="section" id="contato" data-visibility-key="contato">
       <div class="container contact-panel">
         <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-info"><span><small>Telefone</small><a data-phone-link data-phone-display></a></span><span><small>E-mail</small><a data-email-link data-email></a></span><span><small>Atendimento</small><b data-location></b></span></div></div>
-        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option><option>Plano G-Host Essencial</option><option>Plano G-Host Proteção</option><option>Plano G-Host Guardião</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">Nenhum dado é armazenado pelo site.</small></form>
+        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option><option>Plano G-Host Essencial</option><option>Plano G-Host Proteção</option><option>Plano G-Host Guardião</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">A mensagem do formulário não é armazenada pelo site; preferências de analytics seguem o Aviso de Privacidade.</small></form>
       </div>
     </section>
   </main>

@@ -4,10 +4,10 @@ window.SITE_DATA = {
     name: "G-Host",
     subtitle: "Segurança Eletrônica & Automação",
     tagline: "Tecnologia que protege.",
-    whatsapp: "5500000000000",
-    phoneDisplay: "(00) 00000-0000",
+    whatsapp: "5555991144741",
+    phoneDisplay: "(55) 55 99114-4741",
     email: "contato@ghostseguranca.com.br",
-    location: "Sua cidade e região",
+    location: "Santa Maria - RS",
     instagram: "@ghost.seguranca"
   },
   theme: { accent: "#39e6b1", accent2: "#34b7ff" },
@@ -15,14 +15,14 @@ window.SITE_DATA = {
   hero: {
     eyebrow: "Segurança • Controle • Automação",
     title: "Proteção inteligente para o seu patrimônio.",
-    description: "Instalação de câmeras, alarmes, manutenção e automação residencial com projeto sob medida, configuração profissional e suporte técnico.",
-    primaryButton: "Solicitar avaliação",
-    secondaryButton: "Conhecer soluções"
+    description: "Monte sua solução de segurança e automação, escolha somente os serviços que precisa e acompanhe o projeto pela plataforma G-Host.",
+    primaryButton: "Montar minha proteção",
+    secondaryButton: "Comparar planos"
   },
   stats: [
-    { value: "100%", label: "projeto pensado para a necessidade do cliente" },
-    { value: "3", label: "frentes integradas: segurança, controle e automação" },
-    { value: "1", label: "estrutura centralizada para suporte e expansão" }
+    { value: "3", label: "níveis G-Host" },
+    { value: "Sob medida", label: "projeto por ambiente" },
+    { value: "Integrado", label: "segurança + automação" }
   ],
   services: [
     { id:"cameras", enabled:true, icon:"camera", title:"Câmeras e CFTV", description:"Projeto, instalação e configuração de câmeras, DVR/NVR, gravação, visão noturna e acesso remoto.", features:["Pontos estratégicos","Acesso pelo celular","Gravação e armazenamento"] },

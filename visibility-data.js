@@ -8,11 +8,13 @@ window.GHOST_VISIBILITY = {
     "ecossistema": true,
     "planos": true,
     "configurador": true,
+    "plataforma": true,
     "empresa": true,
     "processo": true,
     "simulador": true,
     "faq": true,
-    "contato": true
+    "contato": true,
+    "areaCliente": true
   },
   "options": {
     "showPlanPrices": true,

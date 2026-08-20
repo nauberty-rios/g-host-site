@@ -4,6 +4,7 @@
   const cfg = window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").trim().replace(/\/+$/, "");
   const inactivitySeconds = Math.max(300, Math.min(1800, Number(cfg.inactivitySeconds || 900)));
+  const OWNER_DEVICE_KEY = "ghost_owner_device_v1";
 
   const authShell = document.getElementById("auth-shell");
   const adminShell = document.getElementById("admin-shell");
@@ -65,6 +66,8 @@
   const api = async (path, options = {}) => {
     const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
     if (token) headers.Authorization = `Bearer ${token}`;
+    const ownerDevice = localStorage.getItem(OWNER_DEVICE_KEY) || "";
+    if (ownerDevice) headers["X-Ghost-Device"] = ownerDevice;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
     try {
@@ -145,6 +148,7 @@
     adminShell.hidden = false;
     unlocked = true;
     window.GHOST_ADMIN_SESSION = () => token;
+    window.GHOST_CONTROL_CONTEXT = { kind: "owner", role: "dono", permissions: { all: true } };
     startSessionWatch();
     window.dispatchEvent(new CustomEvent("ghost-authenticated"));
     refreshSessionInfo();
@@ -298,6 +302,7 @@
       });
 
       token = result.token || "";
+      if (result.ownerDeviceToken) localStorage.setItem(OWNER_DEVICE_KEY, result.ownerDeviceToken);
 
       expiresAt = Number(
         result.expiresAt ||

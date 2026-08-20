@@ -1,0 +1,18 @@
+(() => {
+  "use strict";
+  const API=String(window.GHOST_CLIENT_CONFIG?.apiBase||"").replace(/\/$/,"");
+  const KEY=window.GHOST_CLIENT_CONFIG?.sessionStorageKey||"ghost_portal_token";
+  const token=sessionStorage.getItem(KEY)||"";
+  const id=Number(new URLSearchParams(location.search).get("id")||0);
+  const paper=document.getElementById("contract-paper"),acceptBox=document.getElementById("contract-accept"),status=document.getElementById("contract-status"),codeBox=document.getElementById("contract-code-box"),codeInput=document.getElementById("contract-accept-code");
+  let contract=null,challengeId="";
+  const api=async(path,options={})=>{if(!token)throw new Error("Entre na Minha G-Host para acessar o contrato.");const r=await fetch(`${API}${path}`,{...options,headers:{"Content-Type":"application/json","Authorization":`Bearer ${token}`},cache:"no-store",referrerPolicy:"no-referrer"});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||"Não foi possível carregar o contrato.");return d;};
+  const el=(tag,text="",cls="")=>{const x=document.createElement(tag);if(cls)x.className=cls;if(text)x.textContent=text;return x;};
+  const setStatus=(text,kind="")=>{status.textContent=text;status.className=`client-status ${kind}`.trim();};
+  const render=c=>{paper.replaceChildren();const h=el("h1",c.title||"Contrato G-Host"),sub=el("p",`${c.code} · versão ${c.version}`),meta=el("div","","contract-meta");[["Status",c.status],["Plano",c.plan_id||"Não informado"],["Valor",Number(c.amount||0)>0?Number(c.amount).toLocaleString("pt-BR",{style:"currency",currency:c.currency||"BRL"}):"Conforme proposta"],["Início",c.starts_at||"A definir"],["Término",c.ends_at||"Conforme contrato"],["Hash",c.document_hash||"-"]].forEach(([a,b])=>{const d=el("div");d.append(el("small",a),el("strong",String(b||"")));meta.append(d);});paper.append(h,sub,meta,el("p",c.summary||""),el("div",c.body_text||"","contract-body"));acceptBox.hidden=c.status!=="pendente_aceite";if(acceptBox.hidden){challengeId="";codeBox.hidden=true;}};
+  const load=async()=>{if(!id)throw new Error("Contrato inválido.");const d=await api(`/portal/contracts/${id}`);contract=d.contract;render(contract);};
+  document.getElementById("print-contract").onclick=()=>window.print();
+  document.getElementById("accept-contract").onclick=async()=>{if(!document.getElementById("accept-contract-check").checked)return setStatus("Marque a confirmação depois de ler o documento.","error");if(!confirm("Enviar um código ao seu e-mail para confirmar o aceite desta versão?"))return;setStatus("Enviando código de confirmação...");try{const r=await api(`/portal/contracts/${id}/accept/start`,{method:"POST",body:JSON.stringify({accept:true})});challengeId=r.challengeId||"";codeBox.hidden=false;codeInput.value="";codeInput.focus();setStatus(`Código enviado para ${r.maskedEmail||"seu e-mail"}.`,"success");}catch(e){setStatus(e.message,"error");}};
+  document.getElementById("confirm-contract").onclick=async()=>{const code=String(codeInput.value||"").replace(/\D/g,"");if(!challengeId||code.length!==6)return setStatus("Digite o código de 6 números enviado por e-mail.","error");if(!confirm("Confirmar definitivamente o aceite eletrônico desta versão do contrato?"))return;setStatus("Registrando aceite com confirmação por e-mail...");try{await api(`/portal/contracts/${id}/accept/verify`,{method:"POST",body:JSON.stringify({accept:true,challengeId,code})});challengeId="";codeInput.value="";codeBox.hidden=true;setStatus("Contrato aceito e registrado com sucesso.","success");await load();}catch(e){setStatus(e.message,"error");}};
+  load().catch(e=>{paper.replaceChildren(el("h1","Não foi possível abrir o contrato"),el("p",e.message));});
+})();
