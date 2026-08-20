@@ -19,8 +19,16 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="plans.css">
+  <link rel="stylesheet" href="configurator.css">
   <script src="site-data.js"></script>
+  <script src="plans-data.js"></script>
+  <script src="catalog-data.js"></script>
+  <script src="visibility-data.js"></script>
   <script defer src="app.js"></script>
+  <script defer src="plans.js"></script>
+  <script defer src="configurator.js"></script>
+  <script defer src="visibility.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
@@ -34,13 +42,13 @@
       </a>
       <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menu"><span></span><span></span><span></span></button>
       <div class="nav-links" id="nav-links">
-        <a href="#solucoes">Soluções</a><a href="#empresa">Empresa</a><a href="#processo">Como funciona</a><a href="#faq">Dúvidas</a><a class="btn btn-small" href="#contato">Orçamento</a>
+        <a href="#solucoes" data-nav-target="solucoes">Soluções</a><a href="#planos" data-nav-target="planos">Planos</a><a href="#configurador" data-nav-target="configurador">Monte seu projeto</a><a href="#empresa" data-nav-target="empresa">Empresa</a><a href="#processo" data-nav-target="processo">Como funciona</a><a href="#faq" data-nav-target="faq">Dúvidas</a><a class="btn btn-small" href="#contato" data-nav-target="contato">Orçamento</a>
       </div>
     </nav>
   </header>
 
   <main id="conteudo">
-    <section class="hero section">
+    <section class="hero section" data-visibility-key="hero">
       <div class="container hero-grid">
         <div class="hero-copy">
           <span class="eyebrow" id="hero-eyebrow"></span>
@@ -63,37 +71,65 @@
       <div class="container stats" id="stats"></div>
     </section>
 
-    <section class="section section-muted" id="solucoes">
+    <section class="section section-muted" id="solucoes" data-visibility-key="solucoes">
       <div class="container">
         <div class="section-heading"><span class="eyebrow">Soluções integradas</span><h2>Segurança e automação em um só projeto.</h2><p>Do primeiro ponto de câmera à manutenção e automação da casa, a estrutura é pensada para funcionar de forma organizada.</p></div>
         <div class="service-grid" id="service-grid"></div>
       </div>
     </section>
 
-    <section class="section" id="empresa">
+
+
+    <section class="section plans-section" id="planos" data-visibility-key="planos">
+      <div class="container">
+        <div class="section-heading center">
+          <span class="eyebrow">Planos G-Host</span>
+          <h2>Escolha o nível de proteção ideal.</h2>
+          <p>Os recursos do plano são separados da quantidade de equipamentos. O projeto final é dimensionado conforme cada imóvel.</p>
+        </div>
+        <div class="plans-grid" id="plans-grid" aria-live="polite"></div>
+        <p class="plans-note">Valores, equipamentos e condições podem variar conforme avaliação técnica. Promoções exibidas no site são válidas conforme as condições informadas no orçamento.</p>
+      </div>
+    </section>
+
+    <section class="section section-muted" id="ecossistema" data-visibility-key="ecossistema">
+      <div class="container">
+        <div class="section-heading"><span class="eyebrow">Ecossistema G-Host</span><h2>Uma plataforma. Três núcleos trabalhando juntos.</h2><p>O Guardião coordena o ambiente local, o Horus interpreta câmeras e sensores e o Sentinela acompanha a rede de segurança. Recursos avançados só são ativados quando contratados e tecnicamente disponíveis.</p></div>
+        <div class="service-grid"><article class="service-card"><h3>Guardião</h3><p>Núcleo local que integra os módulos e mantém funções locais compatíveis mesmo sem Internet.</p><ul><li>Coordenação local</li><li>Eventos e automações</li><li>Integração dos módulos</li></ul></article><article class="service-card"><h3>Horus</h3><p>Camada visual e sensorial para interpretar eventos de câmeras e sensores autorizados.</p><ul><li>CFTV e sensores</li><li>Eventos visuais</li><li>IA quando contratada</li></ul></article><article class="service-card"><h3>Sentinela</h3><p>Camada de segurança da rede local, inventário e alertas de dispositivos e infraestrutura.</p><ul><li>Rede e dispositivos</li><li>Alertas</li><li>Políticas autorizadas</li></ul></article></div>
+      </div>
+    </section>
+
+    <section class="section" id="configurador" data-visibility-key="configurador">
+      <div class="container">
+        <div class="section-heading"><span class="eyebrow">Autoatendimento</span><h2>Monte sua proteção do seu jeito.</h2><p>Escolha o nível G-Host e adicione somente os serviços que você quer. O resultado é uma pré-configuração; a avaliação técnica confirma equipamentos, compatibilidade e orçamento final.</p></div>
+        <div id="self-service-app" class="self-service-shell"></div>
+      </div>
+    </section>
+
+    <section class="section" id="empresa" data-visibility-key="empresa">
       <div class="container about-grid">
         <div class="about-visual"><div class="system-card"><span class="system-label">ECOSSISTEMA G-HOST</span><div class="system-row"><span>Câmeras</span><b>01</b></div><div class="system-row"><span>Alarmes</span><b>02</b></div><div class="system-row"><span>Automação</span><b>03</b></div><div class="system-row"><span>Manutenção</span><b>04</b></div><div class="system-line"></div><small>Uma estrutura pensada para crescer com a necessidade do cliente.</small></div></div>
         <div class="section-heading about-copy"><span class="eyebrow">Sobre a empresa</span><h2 id="about-title"></h2><p id="about-text"></p><div class="about-points"><span><b>01</b> Análise do ambiente</span><span><b>02</b> Instalação organizada</span><span><b>03</b> Configuração e testes</span><span><b>04</b> Suporte pós-instalação</span></div></div>
       </div>
     </section>
 
-    <section class="section section-muted" id="processo"><div class="container"><div class="section-heading center"><span class="eyebrow">Processo G-Host</span><h2>Do planejamento ao suporte.</h2></div><div class="process-grid" id="process-grid"></div></div></section>
+    <section class="section section-muted" id="processo" data-visibility-key="processo"><div class="container"><div class="section-heading center"><span class="eyebrow">Processo G-Host</span><h2>Do planejamento ao suporte.</h2></div><div class="process-grid" id="process-grid"></div></div></section>
 
     <div id="custom-sections"></div>
 
-    <section class="section"><div class="container simulator"><div><span class="eyebrow">Simulador rápido</span><h2>Qual solução combina com sua necessidade?</h2><p>Marque o que você precisa e veja uma sugestão inicial. A avaliação técnica define o projeto final.</p></div><div class="simulator-box"><label class="check"><input type="checkbox" data-sim="Câmeras"><span></span>Câmeras</label><label class="check"><input type="checkbox" data-sim="Alarmes"><span></span>Alarmes</label><label class="check"><input type="checkbox" data-sim="Automação"><span></span>Automação</label><label class="check"><input type="checkbox" data-sim="Manutenção"><span></span>Manutenção</label><div class="sim-result"><small>Sugestão</small><strong id="sim-result">Selecione uma ou mais soluções</strong></div></div></div></section>
+    <section class="section" data-visibility-key="simulador"><div class="container simulator"><div><span class="eyebrow">Simulador rápido</span><h2>Qual solução combina com sua necessidade?</h2><p>Marque o que você precisa e veja uma sugestão inicial. A avaliação técnica define o projeto final.</p></div><div class="simulator-box"><label class="check"><input type="checkbox" data-sim="Câmeras"><span></span>Câmeras</label><label class="check"><input type="checkbox" data-sim="Alarmes"><span></span>Alarmes</label><label class="check"><input type="checkbox" data-sim="Automação"><span></span>Automação</label><label class="check"><input type="checkbox" data-sim="Manutenção"><span></span>Manutenção</label><div class="sim-result"><small>Sugestão</small><strong id="sim-result">Selecione uma ou mais soluções</strong></div></div></div></section>
 
-    <section class="section section-muted" id="faq"><div class="container faq-grid"><div class="section-heading"><span class="eyebrow">Dúvidas frequentes</span><h2>Informação clara antes de contratar.</h2></div><div class="accordion" id="faq-list"></div></div></section>
+    <section class="section section-muted" id="faq" data-visibility-key="faq"><div class="container faq-grid"><div class="section-heading"><span class="eyebrow">Dúvidas frequentes</span><h2>Informação clara antes de contratar.</h2></div><div class="accordion" id="faq-list"></div></div></section>
 
-    <section class="section" id="contato">
+    <section class="section" id="contato" data-visibility-key="contato">
       <div class="container contact-panel">
         <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-info"><span><small>Telefone</small><a data-phone-link data-phone-display></a></span><span><small>E-mail</small><a data-email-link data-email></a></span><span><small>Atendimento</small><b data-location></b></span></div></div>
-        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">Nenhum dado é armazenado pelo site.</small></form>
+        <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option><option>Plano G-Host Essencial</option><option>Plano G-Host Proteção</option><option>Plano G-Host Guardião</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">Nenhum dado é armazenado pelo site.</small></form>
       </div>
     </section>
   </main>
 
-  <footer class="footer"><div class="container footer-grid"><div class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong data-company-name></strong><small data-company-tagline></small></span></div><p>© <span id="year"></span> <span data-company-name></span>. Todos os direitos reservados.</p></div></footer>
+  <footer class="footer"><div class="container footer-grid"><div class="brand footer-brand"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 64 64"><path d="M32 5 54 14v16c0 15-9 25-22 31C19 55 10 45 10 30V14L32 5Z"/><path d="M43 23H28a9 9 0 0 0 0 18h10v-8h-9"/></svg></span><span class="brand-copy"><strong data-company-name></strong><small data-company-tagline></small></span></div><p>© <span id="year"></span> <span data-company-name></span>. Todos os direitos reservados. · <a href="privacidade.html">Privacidade</a> · <a href="termos.html">Termos</a></p></div></footer>
   <noscript><div class="noscript-banner">Ative o JavaScript para carregar os dados e interações do site.</div></noscript>
 </body>
 </html>

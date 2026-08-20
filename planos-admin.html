@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow,noarchive">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src https://g-host-secure.naubertymoraes13.workers.dev; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'">
+  <title>G-Host | Planos e promoções</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="plans-admin.css">
+  <script src="auth-config.js"></script>
+  <script src="plans-data.js"></script>
+  <script defer src="admin-auth.js"></script>
+  <script defer src="planos-admin.js"></script>
+</head>
+<body>
+  <section id="auth-shell" class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand"><strong>G-HOST</strong><span>Planos & Promoções</span></div>
+      <div id="auth-setup-warning" class="setup-warning" hidden>Backend de autenticação ainda não configurado.</div>
+      <p id="auth-status" class="auth-status">Entre com a autenticação administrativa da G-Host.</p>
+      <form id="step-password" class="auth-step">
+        <label>Senha administrativa<input id="admin-password" type="password" autocomplete="current-password" required></label>
+        <button class="btn" type="submit">Continuar</button>
+      </form>
+      <form id="step-email" class="auth-step" hidden>
+        <p>Código enviado para <b id="email-target">seu e-mail</b>.</p>
+        <label>Código do e-mail<input id="email-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></label>
+        <button class="btn" type="submit">Confirmar e-mail</button>
+      </form>
+      <form id="step-sms" class="auth-step" hidden>
+        <p id="phone-target">Use o código de 6 dígitos do aplicativo autenticador.</p>
+        <label>Código do autenticador<input id="sms-code" inputmode="numeric" maxlength="6" autocomplete="one-time-code" required></label>
+        <button class="btn" type="submit">Entrar</button>
+      </form>
+      <button id="restart-auth" class="btn btn-ghost" type="button">Recomeçar acesso</button>
+    </div>
+  </section>
+
+  <div id="admin-shell" hidden>
+    <header class="plans-admin-header">
+      <div><span class="eyebrow">G-Host Control Center</span><h1>Planos e promoções</h1><p>Altere valores e campanhas sem editar o código do site.</p></div>
+      <div class="plans-admin-actions"><a class="btn btn-ghost" href="admin.html">Control Center</a><a class="btn btn-ghost" href="catalogo-admin.html">Catálogo</a><a class="btn btn-ghost" href="visibilidade-admin.html">Visibilidade</a><span id="session-timer">Sessão ativa</span><button id="logout-btn" class="btn btn-ghost" type="button">Sair</button></div>
+    </header>
+    <main class="plans-admin-main">
+      <div class="plans-admin-toolbar">
+        <span id="session-timer-card">Sessão protegida</span>
+        <span id="last-publish-at" hidden></span>
+        <button id="preview-plans" class="btn btn-ghost" type="button">Visualizar site</button>
+        <button id="publish-plans" class="btn" type="button">Salvar e publicar</button>
+      </div>
+      <p id="plans-save-status" class="publish-status">Edite os planos abaixo.</p>
+      <section id="plans-editor" class="plans-editor"></section>
+      <div class="plans-admin-bottom"><button id="publish-plans-bottom" class="btn" type="button">Salvar e publicar</button></div>
+    </main>
+  </div>
+</body>
+</html>
