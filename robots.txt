@@ -11,3 +11,7 @@ Disallow: /staff-visibilidade.html
 Disallow: /cliente.html
 Disallow: /contrato.html
 Disallow: /publisher-worker/
+
+Disallow: /entrar.html
+Disallow: /cadastro.html
+Disallow: /recuperar-senha.html

@@ -148,7 +148,7 @@
 
   const enterDashboard = async token => {
     setToken(token); auth.hidden = true; dashboard.hidden = false; logoutBtn.hidden = false;
-    try { await loadDashboard(); } catch (error) { if (error.status === 401) { setToken(""); dashboard.hidden = true; auth.hidden = false; logoutBtn.hidden = true; showAuthForm("login"); } setStatus(dashboardStatus, error.message, "error"); }
+    try { await loadDashboard(); } catch (error) { if (error.status === 401) { setToken(""); location.replace("entrar.html"); return; } setStatus(dashboardStatus, error.message, "error"); }
   };
 
   $("tab-login").addEventListener("click", () => showAuthForm("login"));
@@ -204,9 +204,9 @@
   });
 
   $("client-refresh").addEventListener("click",()=>loadDashboard().catch(error=>setStatus(dashboardStatus,error.message,"error")));
-  logoutBtn.addEventListener("click",async()=>{try{if(state.token)await api("/portal/logout",{method:"POST",body:"{}"});}catch(_){}setToken("");state.me=null;dashboard.hidden=true;auth.hidden=false;logoutBtn.hidden=true;$("client-role").hidden=true;showAuthForm("login");});
+  logoutBtn.addEventListener("click",async()=>{try{if(state.token)await api("/portal/logout",{method:"POST",body:"{}"});}catch(_){}setToken("");location.replace("entrar.html");});
 
   if(!API)setStatus(authStatus,"Backend de segurança ainda não configurado.","error");
   else if(state.token) enterDashboard(state.token);
-  else showAuthForm("login");
+  else location.replace("entrar.html");
 })();

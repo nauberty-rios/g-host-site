@@ -117,3 +117,14 @@ O arquivo `G-HOST-WORKER-TOTP-PLANOS.js` é uma cópia idêntica para facilitar 
 - Varredura básica de padrões de tokens/segredos públicos.
 - Validador reproduzível em `tools/validate.py`.
 - GitHub Actions em `.github/workflows/validate.yml` executa a validação a cada push/PR.
+
+## Acesso público reorganizado — 2026-08-21
+
+O acesso da Minha G-Host foi separado em páginas independentes para reduzir confusão e deixar o cadastro mais limpo:
+
+- `entrar.html` — somente login;
+- `cadastro.html` — criação de conta + confirmação de e-mail em duas etapas;
+- `recuperar-senha.html` — recuperação de senha separada;
+- `cliente.html` — painel da Minha G-Host após autenticação.
+
+O menu público agora exibe `Entrar` e `Criar conta` diretamente. Usuários sem sessão que tentarem abrir `cliente.html` são encaminhados para `entrar.html`.
