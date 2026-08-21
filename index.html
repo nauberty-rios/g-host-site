@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="description" content="G-Host Segurança Eletrônica e Automação. Instalação de câmeras, alarmes, manutenção, controle de acesso e automação residencial.">
+  <link rel="canonical" href="https://g-host.seg.br/">
   <meta name="robots" content="index,follow,max-image-preview:large">
   <meta name="theme-color" content="#07111f">
   <meta name="color-scheme" content="dark">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src https://g-host-secure.naubertymoraes13.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self'; frame-src 'none'; upgrade-insecure-requests">
-  <link rel="canonical" href="https://g-host.seg.br/">
   <meta property="og:locale" content="pt_BR">
   <meta property="og:type" content="website">
   <meta property="og:title" content="G-Host | Segurança Eletrônica & Automação">
@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="plans.css">
   <link rel="stylesheet" href="configurator.css">
   <link rel="stylesheet" href="consent.css">
+  <link rel="stylesheet" href="front-v2.css">
   <script src="site-data.js"></script>
   <script src="plans-data.js"></script>
   <script src="catalog-data.js"></script>
@@ -48,7 +49,7 @@
       </a>
       <button class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="nav-links" aria-label="Abrir menu"><span></span><span></span><span></span></button>
       <div class="nav-links" id="nav-links">
-        <a href="#solucoes" data-nav-target="solucoes">Soluções</a><a href="#planos" data-nav-target="planos">Planos</a><a href="#configurador" data-nav-target="configurador">Monte seu projeto</a><a href="#empresa" data-nav-target="empresa">Empresa</a><a href="entrar.html" id="client-area-link" data-nav-target="areaCliente">Entrar</a><a class="btn btn-small" href="cadastro.html">Criar conta</a>
+        <a href="#solucoes" data-nav-target="solucoes">Serviços</a><a href="#necessidades">Por necessidade</a><a href="#planos" data-nav-target="planos">Planos</a><a href="#configurador" data-nav-target="configurador">Monte seu projeto</a><a href="#plataforma" data-nav-target="plataforma">Plataforma</a><a href="#contato" data-nav-target="contato">Contato</a><a href="entrar.html" id="client-area-link" data-nav-target="areaCliente">Entrar</a><a class="btn btn-small" href="cadastro.html">Criar conta</a>
       </div>
     </nav>
   </header>
@@ -64,27 +65,70 @@
           <div class="trust-row"><span>Projeto sob medida</span><span>Suporte técnico</span><span>Acesso remoto</span></div>
         </div>
 
-        <div class="hero-console" aria-label="Painel demonstrativo de segurança">
-          <div class="console-top"><span><i class="live-dot"></i> Painel demonstrativo</span><span id="clock">--:--</span></div>
-          <div class="security-map">
-            <div class="map-grid"></div>
-            <div class="shield-core"><svg viewBox="0 0 120 140" aria-hidden="true"><path d="M60 5 110 25v38c0 34-20 58-50 72C30 121 10 97 10 63V25L60 5Z"/><path d="m36 70 16 16 34-38"/></svg></div>
-            <span class="node n1"></span><span class="node n2"></span><span class="node n3"></span><span class="node n4"></span><div class="radar-sweep"></div>
+        <aside class="hero-solutions" aria-label="Resumo das soluções G-Host">
+          <div class="solutions-head">
+            <div><small>Central G-Host</small><strong>Segurança + automação em um só projeto</strong></div>
+            <span class="status-pill"><i></i> Projeto personalizado</span>
           </div>
-          <div class="console-status"><div><small>CFTV</small><strong>Monitoramento</strong></div><div><small>Alarmes</small><strong>Integração</strong></div><div><small>Automação</small><strong>Controle</strong></div></div>
-        </div>
+          <div class="solutions-grid">
+            <article><span class="solution-icon">01</span><div><b>CFTV</b><small>Câmeras, gravação, acesso remoto e expansão.</small></div></article>
+            <article><span class="solution-icon">02</span><div><b>Alarmes</b><small>Sensores, sirenes e integração com o ambiente.</small></div></article>
+            <article><span class="solution-icon">03</span><div><b>Controle de acesso</b><small>Portas, vídeo porteiro e acessos autorizados.</small></div></article>
+            <article><span class="solution-icon">04</span><div><b>Automação</b><small>Iluminação, portões, tomadas, rotinas e integrações.</small></div></article>
+          </div>
+          <div class="solutions-footer">
+            <div><small>Também disponível</small><b>Rede • infraestrutura • manutenção • suporte</b></div>
+            <a href="#configurador">Configurar projeto →</a>
+          </div>
+        </aside>
       </div>
       <div class="container stats" id="stats"></div>
+      <div class="container quick-actions" aria-label="Ações rápidas">
+        <a href="#configurador"><b>Montar projeto</b><small>Escolha equipamentos e serviços</small></a>
+        <a href="#planos"><b>Comparar planos</b><small>Veja o nível de tecnologia ideal</small></a>
+        <a href="#contato"><b>Solicitar atendimento</b><small>Instalação, expansão ou manutenção</small></a>
+        <a href="entrar.html"><b>Minha G-Host</b><small>Acesse sua conta e seus projetos</small></a>
+      </div>
     </section>
 
     <section class="section section-muted" id="solucoes" data-visibility-key="solucoes">
       <div class="container">
-        <div class="section-heading"><span class="eyebrow">Soluções integradas</span><h2>Segurança e automação em um só projeto.</h2><p>Do primeiro ponto de câmera à manutenção e automação da casa, a estrutura é pensada para funcionar de forma organizada.</p></div>
+        <div class="section-heading"><span class="eyebrow">Serviços e soluções</span><h2>Do projeto inicial à manutenção do sistema.</h2><p>Você pode contratar um projeto novo, ampliar uma instalação existente ou solicitar manutenção. CFTV, alarmes, controle de acesso, automação, rede e infraestrutura podem ser combinados conforme a necessidade do local.</p></div>
         <div class="service-grid" id="service-grid"></div>
       </div>
     </section>
 
+    <section class="section" id="necessidades" data-visibility-key="necessidades">
+      <div class="container">
+        <div class="section-heading center">
+          <span class="eyebrow">Escolha pelo que você precisa</span>
+          <h2>Mais opções para começar seu projeto.</h2>
+          <p>Você não precisa saber o nome técnico do equipamento. Escolha o objetivo e use o configurador para montar uma primeira versão.</p>
+        </div>
+        <div class="need-grid">
+          <article class="need-card"><span>01</span><h3>Quero instalar do zero</h3><p>Projeto completo para residência, comércio, empresa ou condomínio.</p><ul><li>Levantamento do ambiente</li><li>Definição de pontos e equipamentos</li><li>Instalação e configuração</li></ul><a href="#configurador">Montar projeto</a></article>
+          <article class="need-card"><span>02</span><h3>Quero aumentar a segurança</h3><p>Ampliação de um sistema que já existe, sem trocar tudo desnecessariamente.</p><ul><li>Novos pontos de câmera</li><li>Sensores e alarmes</li><li>Controle de acesso</li></ul><a href="#contato">Solicitar avaliação</a></article>
+          <article class="need-card"><span>03</span><h3>Meu sistema está com problema</h3><p>Atendimento para falhas de gravação, imagem, rede, sensores e equipamentos compatíveis.</p><ul><li>Manutenção corretiva</li><li>Revisão de conexões</li><li>Diagnóstico do sistema</li></ul><a href="#contato">Pedir manutenção</a></article>
+          <article class="need-card"><span>04</span><h3>Quero automatizar o ambiente</h3><p>Integração de iluminação, portões, tomadas, rotinas e dispositivos compatíveis.</p><ul><li>Automação por ambientes</li><li>Rotinas personalizadas</li><li>Integração com segurança</li></ul><a href="#configurador">Ver opções</a></article>
+        </div>
+      </div>
+    </section>
 
+    <section class="section section-muted" id="opcoes" data-visibility-key="opcoes">
+      <div class="container">
+        <div class="section-heading"><span class="eyebrow">Opções do projeto</span><h2>Escolha módulos conforme o local e o orçamento.</h2><p>Os módulos são combináveis e a quantidade de equipamentos é definida separadamente do plano G-Host.</p></div>
+        <div class="option-grid">
+          <article><b>CFTV e gravação</b><p>Câmeras, DVR/NVR, armazenamento, visualização e expansão de pontos.</p></article>
+          <article><b>Alarmes e sensores</b><p>Sensores de abertura, presença e outros dispositivos compatíveis com o projeto.</p></article>
+          <article><b>Acesso e vídeo porteiro</b><p>Controle de portas, acionamentos autorizados e comunicação de entrada.</p></article>
+          <article><b>Automação</b><p>Iluminação, tomadas, portões e rotinas configuradas conforme o ambiente.</p></article>
+          <article><b>Rede e infraestrutura</b><p>Cabeamento, organização, conectividade e alimentação necessária aos sistemas.</p></article>
+          <article><b>Manutenção</b><p>Revisões preventivas, correções, testes e modernização de instalações existentes.</p></article>
+          <article><b>Suporte e acompanhamento</b><p>Histórico de projeto, chamados e informações vinculadas à conta do cliente quando disponíveis.</p></article>
+          <article><b>Ecossistema G-Host</b><p>Guardião, Horus e Sentinela entram conforme plano, compatibilidade e implantação técnica.</p></article>
+        </div>
+      </div>
+    </section>
 
     <section class="section plans-section" id="planos" data-visibility-key="planos">
       <div class="container">
@@ -121,7 +165,9 @@
           <article><b>03</b><h3>Contratos protegidos</h3><p>Versão e hash do documento, conta autenticada e confirmação adicional por código de e-mail no aceite.</p></article>
           <article><b>04</b><h3>Controle de CFTV</h3><p>Aparelhos autorizados por conta, limite contratual e bloqueio de acessos não autorizados antes do streaming.</p></article>
           <article><b>05</b><h3>Segurança & auditoria</h3><p>Dono e ADM usam autenticação forte, permissões separadas e eventos administrativos auditáveis.</p></article>
-          <article><b>06</b><h3>Emergência</h3><p>Atalhos para 190, 192 e 193, contatos cadastrados e localização somente quando o usuário autorizar.</p></article>
+          <article><b>06</b><h3>Emergência</h3><p>Atalhos para serviços públicos de emergência, contatos cadastrados e localização somente quando o usuário autorizar.</p></article>
+          <article><b>07</b><h3>Suporte organizado</h3><p>Chamados vinculados à conta para acompanhar solicitações, atualizações e histórico de atendimento.</p></article>
+          <article><b>08</b><h3>Manutenção e expansão</h3><p>Registro do projeto ajuda a planejar futuras revisões, substituições e novos pontos compatíveis.</p></article>
         </div>
       </div>
     </section>
@@ -143,7 +189,7 @@
 
     <section class="section" id="contato" data-visibility-key="contato">
       <div class="container contact-panel">
-        <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-info"><span><small>Telefone</small><a data-phone-link data-phone-display></a></span><span><small>E-mail</small><a data-email-link data-email></a></span><span><small>Atendimento</small><b data-location></b></span></div></div>
+        <div><span class="eyebrow">Contato</span><h2 id="contact-title"></h2><p id="contact-text"></p><div class="contact-shortcuts"><span>Projeto novo</span><span>Ampliação</span><span>Manutenção</span><span>Automação</span></div><div class="contact-info"><span><small>Telefone</small><a data-phone-link data-phone-display></a></span><span><small>E-mail</small><a data-email-link data-email></a></span><span><small>Atendimento</small><b data-location></b></span></div></div>
         <form id="contact-form" class="contact-form"><label>Nome<input id="name" required maxlength="80" autocomplete="name" placeholder="Seu nome"></label><label>Serviço<select id="service" required><option value="">Selecione</option><option>Instalação de câmeras</option><option>Alarmes e sensores</option><option>Automação residencial</option><option>Manutenção preventiva</option><option>Manutenção corretiva</option><option>Controle de acesso</option><option>Plano G-Host Essencial</option><option>Plano G-Host Proteção</option><option>Plano G-Host Guardião</option></select></label><label>Mensagem<textarea id="message" required maxlength="1200" rows="5" placeholder="Conte um pouco sobre o local e o que você precisa..."></textarea></label><button class="btn" type="submit">Enviar pelo WhatsApp</button><small id="form-note" class="form-note">A mensagem do formulário não é armazenada pelo site; preferências de analytics seguem o Aviso de Privacidade.</small></form>
       </div>
     </section>
