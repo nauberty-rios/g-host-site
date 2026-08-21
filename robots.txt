@@ -15,3 +15,5 @@ Disallow: /publisher-worker/
 Disallow: /entrar.html
 Disallow: /cadastro.html
 Disallow: /recuperar-senha.html
+
+Sitemap: https://g-host.com.br/sitemap.xml

@@ -3,12 +3,12 @@ main = "worker.js"
 compatibility_date = "2026-08-01"
 
 [vars]
-GITHUB_OWNER = "SEU_USUARIO_GITHUB"
+GITHUB_OWNER = "nauberty-rios"
 GITHUB_REPO = "g-host-site"
 GITHUB_BRANCH = "main"
-ALLOWED_ORIGINS = "https://SEU-DOMINIO"
-EMAIL_FROM = "G-Host <acesso@SEU-DOMINIO>"
-SITE_URL = "https://SEU-DOMINIO/"
+ALLOWED_ORIGINS = "https://g-host.com.br,https://www.g-host.com.br,https://nauberty-rios.github.io"
+EMAIL_FROM = "G-Host <acesso@g-host.com.br>"
+SITE_URL = "https://g-host.com.br/"
 SESSION_TTL_SECONDS = "1800"
 
 [[kv_namespaces]]
