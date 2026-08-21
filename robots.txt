@@ -16,4 +16,4 @@ Disallow: /entrar.html
 Disallow: /cadastro.html
 Disallow: /recuperar-senha.html
 
-Sitemap: https://g-host.com.br/sitemap.xml
+Sitemap: https://g-host.seg.br/sitemap.xml

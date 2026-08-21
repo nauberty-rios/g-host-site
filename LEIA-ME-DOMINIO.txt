@@ -1,0 +1,33 @@
+G-HOST — ALTERACAO PARA DOMINIO OFICIAL g-host.seg.br
+
+Arquivos deste pacote:
+- CNAME
+- index.html
+- privacidade.html
+- termos.html
+- robots.txt
+- sitemap.xml
+
+Upload: GitHub > g-host-site > Codigo > Adicionar arquivo > Carregar arquivos.
+Substitua os arquivos de mesmo nome na raiz do repositorio.
+
+Depois:
+GitHub > g-host-site > Configuracoes > Pages > Dominio personalizado
+Digite: g-host.seg.br
+
+DNS apex no Registro.br:
+A @ 185.199.108.153
+A @ 185.199.109.153
+A @ 185.199.110.153
+A @ 185.199.111.153
+
+Opcional/recomendado IPv6:
+AAAA @ 2606:50c0:8000::153
+AAAA @ 2606:50c0:8001::153
+AAAA @ 2606:50c0:8002::153
+AAAA @ 2606:50c0:8003::153
+
+www:
+CNAME www nauberty-rios.github.io
+
+Nao altere EMAIL_FROM do Worker para @g-host.seg.br antes de verificar o dominio no Resend.
