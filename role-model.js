@@ -27,7 +27,13 @@
 
     const upgrade = root.querySelector?.("#visitor-upgrade-note");
     if (upgrade) {
-      upgrade.innerHTML = "Seu perfil atual é <strong>Usuário</strong>. Você pode montar e salvar projetos. Quando um projeto for fechado com a G-Host, sua conta passa para Cliente e os recursos contratados são liberados.";
+      const strong = document.createElement("strong");
+      strong.textContent = "Usuário";
+      upgrade.replaceChildren(
+        document.createTextNode("Seu perfil atual é "),
+        strong,
+        document.createTextNode(". Você pode montar e salvar projetos. Quando um projeto for fechado com a G-Host, sua conta passa para Cliente e os recursos contratados são liberados.")
+      );
       if (role && role.textContent.trim() === "Usuário") upgrade.hidden = false;
       if (role && ["Cliente", "ADM", "Dono"].includes(role.textContent.trim())) upgrade.hidden = true;
     }
