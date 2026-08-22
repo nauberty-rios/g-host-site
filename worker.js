@@ -81,15 +81,32 @@ const corsHeaders = origin => ({
 const clientIp = request => request.headers.get("CF-Connecting-IP") || "unknown";
 const userAgent = request => (request.headers.get("User-Agent") || "unknown").slice(0, 300);
 
-const requestFingerprint = async request => digestHex(`${clientIp(request)}|${userAgent(request)}`);
+const sanitizeLogText = value => String(value ?? "")
+  .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+  .replace(/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[ip]")
+  .replace(/\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b/g, "[mac]")
+  .replace(/\b(?:re_|ghp_|github_pat_)[A-Za-z0-9_-]{10,}\b/g, "[token]")
+  .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi, "Bearer [redacted]")
+  .slice(0, 240);
+
+const requestFingerprint = async (request, env) =>
+  hmacHex(env.AUTH_PEPPER, `fingerprint|${clientIp(request)}|${userAgent(request)}`);
 const userAgentHash = async request => digestHex(userAgent(request));
 
 const consumeRate = async (env, key, limit, ttl) => {
-  const full = `rate:${key}`;
-  const current = Number(await env.AUTH_KV.get(full) || 0);
-  if (current >= limit) return false;
-  await env.AUTH_KV.put(full, String(current + 1), { expirationTtl: ttl });
-  return true;
+  // Não grava IP, e-mail ou ID bruto no nome da chave do KV.
+  const keyHash = await hmacHex(env.AUTH_PEPPER, `rate|${key}`);
+  const full = `rate:${keyHash}`;
+  try {
+    const current = Number(await env.AUTH_KV.get(full) || 0);
+    if (current >= limit) return false;
+    await env.AUTH_KV.put(full, String(current + 1), { expirationTtl: ttl });
+    return true;
+  } catch (error) {
+    // KV tem limite de gravação por chave; falhar fechado evita transformar isso em HTTP 500.
+    console.error("rate_limit_backend_failed", { errorName: String(error?.name || "Error").slice(0, 60) });
+    return false;
+  }
 };
 
 const maskEmail = email => {
@@ -424,7 +441,11 @@ const normalizeCatalogData = input => {
 const parseJson = async request => {
   const length = Number(request.headers.get("Content-Length") || 0);
   if (length > 220_000) throw new Error("PAYLOAD_TOO_LARGE");
-  return request.json();
+  try {
+    return await request.json();
+  } catch (_) {
+    throw new Error("INVALID_JSON");
+  }
 };
 
 const putAudit = async (env, key, data) => {
@@ -555,7 +576,10 @@ const cleanService = body => ({
 });
 const auditDb = async (env, action, entityType, entityId = "", details = "") => {
   if (!env.DB) return;
-  try { await env.DB.prepare("INSERT INTO audit_log(action, entity_type, entity_id, details) VALUES(?,?,?,?)").bind(str(action, 80), str(entityType, 80), str(entityId, 80), str(details, 1000)).run(); } catch (_) {}
+  try {
+    await env.DB.prepare("INSERT INTO audit_log(action, entity_type, entity_id, details) VALUES(?,?,?,?)")
+      .bind(str(action, 80), str(entityType, 80), str(entityId, 80), sanitizeLogText(details)).run();
+  } catch (_) {}
 };
 const dbWriteRate = async (request, env) => consumeRate(env, `dbw:${clientIp(request)}`, 120, 600);
 
@@ -579,7 +603,7 @@ const verifyOwnerDevice = async (request,env) => {
 const enrollFirstOwnerDevice = async (request,env) => {
   const ids=await getOwnerDeviceIds(env);if(ids.length)return null;
   const id=crypto.randomUUID(),secret=randomToken();
-  const data={secretHash:await digestHex(secret),uaHash:await userAgentHash(request),firstIpHash:await ipPrivacyHash(request,env),lastIpHash:await ipPrivacyHash(request,env),createdAt:Date.now(),lastSeenAt:Date.now(),label:userAgent(request).slice(0,120)};
+  const data={secretHash:await digestHex(secret),uaHash:await userAgentHash(request),firstIpHash:await ipPrivacyHash(request,env),lastIpHash:await ipPrivacyHash(request,env),createdAt:Date.now(),lastSeenAt:Date.now(),label:"Navegador autorizado"};
   await env.AUTH_KV.put(`auth:owner_device:${id}`,JSON.stringify(data));await env.AUTH_KV.put("auth:owner_devices",JSON.stringify([id]));return {deviceId:id,deviceToken:`${id}.${secret}`};
 };
 
@@ -762,6 +786,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const origin = allowedOrigin(request, env);
+    const requestId = crypto.randomUUID();
+    let failureStage = "routing";
 
     if (request.method === "OPTIONS") {
       if (!origin) return new Response(null, { status: 403, headers: securityHeaders });
@@ -769,7 +795,7 @@ export default {
     }
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return json({ ok: true, service: "g-host-secure" });
+      return json({ ok: true });
     }
 
     if (!origin) return json({ error: "Origem não autorizada." }, 403);
@@ -778,18 +804,22 @@ export default {
 
     if (url.pathname === "/portal/readiness" && request.method === "GET") {
       let database = false;
+      let schemaReady = false;
       let kv = false;
-      try { database = Boolean((await env.DB?.prepare("SELECT 1 AS ok").first())?.ok); } catch (_) {}
+      try {
+        database = Boolean((await env.DB?.prepare("SELECT 1 AS ok").first())?.ok);
+        if (database) {
+          const row = await env.DB.prepare(
+            "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name IN ('user_accounts','people','legal_acceptances')"
+          ).first();
+          schemaReady = Number(row?.n || 0) === 3;
+        }
+      } catch (_) {}
       try { if (env.AUTH_KV) { await env.AUTH_KV.get("health:probe"); kv = true; } } catch (_) {}
       const emailConfigured = Boolean(env.RESEND_API_KEY && env.EMAIL_FROM);
-      return json({
-        ok: database && kv && emailConfigured,
-        database,
-        kv,
-        emailConfigured,
-        originAuthorized: true,
-        service: "g-host-secure"
-      }, database && kv ? 200 : 503, cors);
+      const ok = database && schemaReady && kv && emailConfigured;
+      // Não expõe ao navegador quais componentes internos estão configurados.
+      return json({ ok, code: ok ? "READY" : "SERVICE_UNAVAILABLE" }, ok ? 200 : 503, cors);
     }
 
     try {
@@ -822,9 +852,12 @@ export default {
       // Cadastro público. Toda conta nasce como VISITANTE.
       // ---------------------------------------------------------
       if (url.pathname === "/portal/register/start" && request.method === "POST") {
-        if (!env.DB) return json({ error: "Banco D1 não configurado." }, 503, cors);
+        failureStage = "portal_register_precheck";
+        if (!env.DB) return json({ error: "Serviço temporariamente indisponível." }, 503, cors);
         const ip = clientIp(request);
+        failureStage = "portal_register_rate_limit";
         if (!(await consumeRate(env, `portal-register:${ip}`, 6, 900))) return json({ error: "Muitas tentativas de cadastro. Aguarde alguns minutos." }, 429, cors);
+        failureStage = "portal_register_parse";
         const body = await parseJson(request);
         const name = str(body?.name, 120);
         const email = normalizeEmail(body?.email);
@@ -835,6 +868,7 @@ export default {
         if (!name || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Nome e e-mail válidos são obrigatórios." }, 400, cors);
         if (password.length < 12 || password.length > 128) return json({ error: "A senha precisa ter entre 12 e 128 caracteres." }, 400, cors);
         if (!acceptTerms || !acknowledgePrivacy) return json({ error: "Leia e confirme os Termos de Uso e o Aviso de Privacidade para criar a conta." }, 400, cors);
+        failureStage = "portal_register_account_lookup";
         const existing = await env.DB.prepare("SELECT id FROM user_accounts WHERE lower(email)=? LIMIT 1").bind(email).first();
         if (existing) return json({ error: "Já existe uma conta com este e-mail." }, 409, cors);
 
@@ -842,25 +876,27 @@ export default {
         const code = randomDigits(6);
         const salt = randomToken().slice(0, 32);
         const iterations = 310000;
+        failureStage = "portal_register_password_hash";
         const passwordHash = await derivePasswordHash(password, salt, iterations);
+        failureStage = "portal_register_challenge_mac";
         const codeMac = await hmacHex(env.AUTH_PEPPER, `${challengeId}|portal-register|${email}|${code}`);
+        failureStage = "portal_register_challenge_store";
         await env.AUTH_KV.put(`portal-challenge:${challengeId}`, JSON.stringify({
           type: "register", name, email, phone, salt, passwordHash, iterations, codeMac,
           attempts: 0, uaHash: await userAgentHash(request), createdAt: Date.now(), expiresAt: Date.now() + 600000
         }), { expirationTtl: 600 });
         try {
+          failureStage = "portal_register_email";
           await sendEmailTo(env, email, "Confirme sua conta G-Host", `Seu código de confirmação G-Host é: ${code}. Ele expira em 10 minutos. Se você não solicitou este cadastro, ignore esta mensagem.`);
         } catch (error) {
           await env.AUTH_KV.delete(`portal-challenge:${challengeId}`).catch(()=>{});
           console.error("portal_register_email_failed", { status: Number(error?.status || 0), providerCode: String(error?.providerCode || "").slice(0,80) });
-          const sandboxBlocked = Number(error?.status || 0) === 403;
           return json({
-            error: sandboxBlocked
-              ? "O envio de códigos para novos e-mails ainda está em ativação. Assim que o domínio de e-mail G-Host for verificado, o cadastro funcionará normalmente."
-              : "Não foi possível enviar o código de confirmação por e-mail. Tente novamente em alguns instantes.",
+            error: "Não foi possível enviar o código de confirmação por e-mail. Tente novamente em alguns instantes.",
             code: "EMAIL_UNAVAILABLE"
           }, 503, cors);
         }
+        failureStage = "portal_register_audit";
         await portalAudit(env, null, "register_started", "info", "Cadastro público iniciado", request, "", { emailHash: await hmacHex(env.AUTH_PEPPER, email) });
         return json({ ok: true, challengeId, maskedEmail: maskEmail(email), expiresIn: 600 }, 200, cors);
       }
@@ -1181,7 +1217,7 @@ export default {
         await Promise.all([env.AUTH_KV.delete(`staff:totp_secret:${id}`),env.AUTH_KV.delete(`staff:totp_enrolled:${id}`)]).catch(()=>{});
         await env.DB.prepare("UPDATE user_devices SET status='revoked',revoked_at=CURRENT_TIMESTAMP WHERE account_id=? AND purpose='admin' AND status='trusted'").bind(id).run().catch(()=>{});
         await env.DB.prepare("UPDATE user_accounts SET auth_version=auth_version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(id).run();
-        await auditDb(env,"security_reset","user_account",String(id),String(a.email||""));return json({ok:true,message:"MFA, navegador ADM e sessões administrativas foram invalidados. No próximo acesso o ADM fará novo cadastro do autenticador e do aparelho."},200,cors);
+        await auditDb(env,"security_reset","user_account",String(id),`account:${id}`);return json({ok:true,message:"MFA, navegador ADM e sessões administrativas foram invalidados. No próximo acesso o ADM fará novo cadastro do autenticador e do aparelho."},200,cors);
       }
 
       if (url.pathname === "/admin/client-options" && request.method === "GET") {
@@ -1297,7 +1333,7 @@ export default {
 
         const challengeId = crypto.randomUUID();
         const code = randomDigits(6);
-        const fingerprint = await requestFingerprint(request);
+        const fingerprint = await requestFingerprint(request, env);
         const emailMac = await hmacHex(env.AUTH_PEPPER, `${challengeId}|email|${code}`);
         await env.AUTH_KV.put(`challenge:${challengeId}`, JSON.stringify({
           step: "email",
@@ -1329,7 +1365,7 @@ export default {
           await env.AUTH_KV.delete(key);
           return json({ error: "Verificação expirada. Recomece o acesso." }, 401, cors);
         }
-        if (!(await safeEqual(challenge.fingerprint || "", await requestFingerprint(request)))) {
+        if (!(await safeEqual(challenge.fingerprint || "", await requestFingerprint(request, env)))) {
           await env.AUTH_KV.delete(key);
           return json({ error: "A verificação mudou de dispositivo ou rede. Recomece o acesso." }, 401, cors);
         }
@@ -1429,7 +1465,7 @@ return json({
         if (
           !(await safeEqual(
             challenge.fingerprint || "",
-            await requestFingerprint(request)
+            await requestFingerprint(request, env)
           ))
         ) {
           await env.AUTH_KV.delete(key);
@@ -1842,7 +1878,21 @@ return json({
       return json({ error: "Rota não encontrada." }, 404, cors);
     } catch (error) {
       if (error?.message === "PAYLOAD_TOO_LARGE") return json({ error: "Requisição muito grande." }, 413, cors);
-      return json({ error: "Falha interna de segurança. Tente novamente." }, 500, cors);
+      if (error?.message === "INVALID_JSON") return json({ error: "JSON inválido." }, 400, cors);
+      console.error("worker_internal_error", {
+        requestId,
+        method: request.method,
+        path: url.pathname,
+        stage: failureStage,
+        errorName: String(error?.name || "Error").slice(0, 60),
+        errorCode: String(error?.code || "").slice(0, 80),
+        message: sanitizeLogText(error?.message || "")
+      });
+      return json({
+        error: "Falha interna de segurança. Tente novamente.",
+        code: "INTERNAL_ERROR",
+        requestId
+      }, 500, { ...cors, "X-Request-Id": requestId });
     }
   }
 };
