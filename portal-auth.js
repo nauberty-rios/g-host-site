@@ -121,6 +121,7 @@
           body: JSON.stringify({ challengeId: deviceChallengeId, code })
         });
         saveSession(result);
+        if (!result.token) throw new Error("O servidor não criou uma sessão válida.");
         deviceChallengeId = "";
         input.value = "";
         location.replace("cliente.html");
@@ -135,12 +136,10 @@
   };
 
   const existingToken = sessionStorage.getItem(TOKEN_KEY) || "";
-  const existingDevice = localStorage.getItem(DEVICE_KEY) || "";
-  if (existingToken && existingDevice) {
+  if (existingToken) {
     location.replace("cliente.html");
     return;
   }
-  if (existingToken && !existingDevice) sessionStorage.removeItem(TOKEN_KEY);
 
   const loginForm = $("login-form");
   loginForm?.addEventListener("submit", async event => {
@@ -213,7 +212,9 @@
         body: JSON.stringify({ challengeId, code: $("register-code").value })
       });
       saveSession(result);
-      if (!result.token || !result.portalDeviceToken) throw new Error("A conta foi confirmada, mas o aparelho não recebeu uma sessão segura.");
+      // Compatibilidade de transição: o Worker antigo devolve somente o token.
+      // O Worker protegido também devolve portalDeviceToken e vincula a sessão ao aparelho.
+      if (!result.token) throw new Error("A conta foi confirmada, mas o servidor não criou uma sessão válida.");
       location.replace("cliente.html");
     } catch (error) {
       setStatus(error.message, "error");
