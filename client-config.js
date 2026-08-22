@@ -12,6 +12,15 @@ window.GHOST_CLIENT_CONFIG = {
   const deviceKey = cfg.portalDeviceStorageKey;
   const page = location.pathname.split("/").pop() || "";
 
+  const protectedPortalPages = new Set([
+    "entrar.html", "cadastro.html", "recuperar-senha.html", "cliente.html", "contrato.html"
+  ]);
+  if (protectedPortalPages.has(page) && window.top !== window.self) {
+    window.stop();
+    document.documentElement.replaceChildren();
+    return;
+  }
+
   // A área autenticada não aceita mais uma sessão antiga sem aparelho de portal vinculado.
   if (page === "cliente.html") {
     const token = sessionStorage.getItem(tokenKey) || "";
