@@ -9,6 +9,7 @@ window.GHOST_AUTH_CONFIG = {
 
   const cfg = window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const COOKIE_SENTINEL = "__gh_cookie__";
   const OWNER_DEVICE_KEY = "ghost_owner_device_v1";
   const STAFF_DEVICE_KEY = "ghost_staff_device_v1";
 
@@ -34,12 +35,15 @@ window.GHOST_AUTH_CONFIG = {
     if (apiBase && target.startsWith(apiBase)) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
+      if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
+      if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+
       if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
         const kind = window.GHOST_CONTROL_CONTEXT?.kind || (page.startsWith("staff") ? "staff" : "owner");
         const device = localStorage.getItem(kind === "staff" ? STAFF_DEVICE_KEY : OWNER_DEVICE_KEY) || "";
-        if (device) headers.set("X-Ghost-Device", device);
+        if (device && device !== COOKIE_SENTINEL) headers.set("X-Ghost-Device", device);
       }
-      nextInit = { ...init, headers };
+      nextInit = { ...init, headers, credentials: "include", cache: "no-store", referrerPolicy: "no-referrer" };
     }
 
     const response = await nativeFetch(input, nextInit);
