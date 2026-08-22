@@ -6,41 +6,59 @@
   const DEVICE_ID_KEY = "ghost_device_id_v1";
   const CAMERA_DEVICE_KEY = "ghost_camera_device_token_v1";
   const $ = id => document.getElementById(id);
+
   const state = {
     token: sessionStorage.getItem(TOKEN_KEY) || "",
-    registerChallenge: "",
-    resetChallenge: "",
     me: null,
-    dashboard: null
+    dashboard: null,
+    role: "usuario"
   };
 
-  const auth = $("client-auth"), dashboard = $("client-dashboard"), logoutBtn = $("client-logout");
-  const authStatus = $("client-auth-status"), dashboardStatus = $("client-dashboard-status");
-  const loginForm = $("client-login-form"), registerForm = $("client-register-form"), verifyForm = $("client-verify-form");
-  const resetForm = $("client-reset-form"), resetVerifyForm = $("client-reset-verify-form");
+  const dashboard = $("client-dashboard");
+  const dashboardStatus = $("client-dashboard-status");
+  const logoutBtn = $("client-logout");
 
-  const setStatus = (el, text = "", type = "") => { if (!el) return; el.textContent = text; el.className = `client-status${type ? ` ${type}` : ""}`; };
-  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  const setStatus = (text = "", type = "") => {
+    if (!dashboardStatus) return;
+    dashboardStatus.textContent = text;
+    dashboardStatus.className = `client-status${type ? ` ${type}` : ""}`;
+  };
+
+  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;"
+  }[ch]));
   const empty = text => `<div class="client-empty">${esc(text)}</div>`;
-  const roleLabel = role => ({ visitante:"Visitante", cliente:"Cliente", adm:"ADM", dono:"Dono" }[role] || "Visitante");
+  const normalizeRole = role => role === "visitante" ? "usuario" : (["usuario","cliente","adm","dono"].includes(role) ? role : "usuario");
+  const roleLabel = role => ({ usuario:"Usuário", cliente:"Cliente", adm:"ADM", dono:"Dono" }[normalizeRole(role)] || "Usuário");
+  const isClientRole = role => ["cliente","adm","dono"].includes(normalizeRole(role));
 
   const api = async (path, options = {}) => {
     if (!API) throw new Error("Backend G-Host não configurado.");
-    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+    const headers = { "Content-Type":"application/json", ...(options.headers || {}) };
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     if (options.deviceToken) headers["X-Ghost-Device"] = options.deviceToken;
-    const response = await fetch(`${API}${path}`, { ...options, headers, cache: "no-store", referrerPolicy: "no-referrer" });
+
+    const response = await fetch(`${API}${path}`, {
+      ...options,
+      headers,
+      cache:"no-store",
+      credentials:"omit",
+      referrerPolicy:"no-referrer"
+    });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(data.error || "Não foi possível concluir a operação.");
-      error.code = data.code || ""; error.status = response.status; throw error;
+      error.code = data.code || "";
+      error.status = response.status;
+      throw error;
     }
     return data;
   };
 
-  const setToken = token => {
-    state.token = token || "";
-    if (state.token) sessionStorage.setItem(TOKEN_KEY, state.token); else sessionStorage.removeItem(TOKEN_KEY);
+  const clearSessionAndRedirect = () => {
+    state.token = "";
+    sessionStorage.removeItem(TOKEN_KEY);
+    location.replace("entrar.html");
   };
 
   const getDeviceId = () => {
@@ -50,17 +68,6 @@
       localStorage.setItem(DEVICE_ID_KEY, id);
     }
     return id;
-  };
-
-  const showAuthForm = mode => {
-    [loginForm, registerForm, verifyForm, resetForm, resetVerifyForm].forEach(x => { if (x) x.hidden = true; });
-    [$("tab-login"),$("tab-register"),$("tab-reset")].forEach(x => x?.classList.remove("active"));
-    if (mode === "register") { registerForm.hidden = false; $("tab-register").classList.add("active"); }
-    else if (mode === "verify") verifyForm.hidden = false;
-    else if (mode === "reset") { resetForm.hidden = false; $("tab-reset").classList.add("active"); }
-    else if (mode === "reset-verify") { resetVerifyForm.hidden = false; $("tab-reset").classList.add("active"); }
-    else { loginForm.hidden = false; $("tab-login").classList.add("active"); }
-    setStatus(authStatus, "");
   };
 
   const configurationItem = item => `<article class="client-item"><div><strong>${esc(item.name || "Projeto G-Host")}</strong><small>Plano: ${esc(item.plan_id || "não definido")} · atualizado ${esc(item.updated_at || "")}</small></div><span class="status">${esc(item.status || "rascunho")}</span></article>`;
@@ -75,138 +82,279 @@
   const guardianEvent = item => `<article class="client-item"><div><strong>${esc((item.source || "guardiao").toUpperCase())} · ${esc(item.event_type || "evento")}</strong><small>${esc(item.summary || "")}</small></div><div><small>${esc(item.occurred_at || "")}</small><strong>${esc(item.severity || "info")}</strong></div></article>`;
   const cameraItem = item => `<article class="camera-card ${item.health_status === "offline" ? "offline" : ""}"><strong>${esc(item.display_name || item.model || item.category || "Câmera")}</strong><span>${esc(item.location || item.project_name || "Projeto G-Host")}</span><span class="camera-state ${item.health_status === "online" ? "ok" : "warn"}">${esc(item.health_status || (item.monitoring_enabled ? "configurada" : "aguardando integração"))}</span></article>`;
 
+  const setRoleVisibility = role => {
+    const user = normalizeRole(role) === "usuario";
+    const client = isClientRole(role);
+
+    document.querySelectorAll("[data-user-section]").forEach(el => { el.hidden = !user; });
+    document.querySelectorAll("[data-client-section]").forEach(el => { el.hidden = !client; });
+    document.querySelectorAll("[data-user-nav]").forEach(el => { el.hidden = !user; });
+    document.querySelectorAll("[data-client-nav]").forEach(el => { el.hidden = !client; });
+
+    const primary = $("primary-action");
+    if (primary) primary.textContent = client ? "Contratar mais serviços" : "Contratar serviço";
+    const title = $("proposal-panel-title");
+    if (title) title.textContent = client ? "Novas propostas e ampliações" : "Meus projetos e propostas";
+
+    if (user) {
+      $("summary-one-label").textContent = "Configurações";
+      $("summary-one-help").textContent = "salvas";
+      $("summary-two-label").textContent = "Propostas";
+      $("summary-two-help").textContent = "solicitadas";
+      $("summary-three-label").textContent = "Em andamento";
+      $("summary-three-help").textContent = "negociações";
+    } else {
+      $("summary-one-label").textContent = "Projetos";
+      $("summary-one-help").textContent = "vinculados";
+      $("summary-two-label").textContent = "Equipamentos";
+      $("summary-two-help").textContent = "registrados";
+      $("summary-three-label").textContent = "Chamados/serviços";
+      $("summary-three-help").textContent = "em histórico";
+    }
+  };
+
   const renderDevices = async () => {
     const data = await api("/portal/devices");
-    $("device-limit-label").textContent = `CFTV: até ${data.cameraDeviceLimit || 2} aparelhos`;
-    $("client-devices").innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.label || "Aparelho")}</strong><small>${esc(item.purpose)} · ${esc(item.last_seen_at || "")}</small></div><div class="device-actions"><span class="status">${esc(item.status)}</span>${item.status === "trusted" ? `<button class="mini-danger" type="button" data-revoke-device="${Number(item.id)}">Revogar</button>` : ""}</div></article>`).join("") || empty("Nenhum aparelho registrado.");
-    document.querySelectorAll("[data-revoke-device]").forEach(btn => btn.addEventListener("click", async () => {
-      if (!confirm("Revogar este aparelho? Se ele for usado para CFTV, precisará ser autorizado novamente.")) return;
+    const limit = $("device-limit-label");
+    if (limit) limit.textContent = `CFTV: até ${data.cameraDeviceLimit || 2} aparelhos`;
+    const root = $("client-devices");
+    if (!root) return;
+    root.innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.label || "Aparelho")}</strong><small>${esc(item.purpose || "portal")} · ${esc(item.last_seen_at || "")}</small></div><div class="device-actions"><span class="status">${esc(item.status)}</span>${item.status === "trusted" ? `<button class="mini-danger" type="button" data-revoke-device="${Number(item.id)}">Revogar</button>` : ""}</div></article>`).join("") || empty("Nenhum aparelho registrado.");
+    root.querySelectorAll("[data-revoke-device]").forEach(btn => btn.addEventListener("click", async () => {
+      if (!confirm("Revogar este aparelho?")) return;
       await api(`/portal/devices/${btn.dataset.revokeDevice}/revoke`, { method:"POST", body:"{}" });
       const current = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
       if (current && current.startsWith(`${getDeviceId()}.`)) localStorage.removeItem(CAMERA_DEVICE_KEY);
-      await renderDevices(); await loadCameras();
+      await renderDevices();
+      await loadCameras();
     }));
   };
 
   const loadCameras = async () => {
     const root = $("client-cameras");
-    if (!["cliente","adm","dono"].includes(state.me?.role)) {
-      root.innerHTML = empty("As câmeras serão liberadas quando sua conta for promovida a Cliente e houver CFTV contratado.");
-      $("authorize-camera-device").hidden = true; $("camera-device-state").textContent = "CFTV não liberado"; return;
-    }
-    $("authorize-camera-device").hidden = false;
+    if (!root || !isClientRole(state.role)) return;
+    const button = $("authorize-camera-device");
+    const stateLabel = $("camera-device-state");
+    if (button) button.hidden = false;
     const token = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
-    if (!token) { root.innerHTML = empty("Autorize este aparelho para consultar as câmeras vinculadas à sua conta."); $("camera-device-state").textContent = "Aparelho não autorizado"; return; }
+    if (!token) {
+      root.innerHTML = empty("Autorize este aparelho para consultar as câmeras vinculadas à sua conta.");
+      if (stateLabel) stateLabel.textContent = "Aparelho não autorizado";
+      return;
+    }
     try {
       const data = await api("/portal/cameras", { deviceToken: token });
-      $("camera-device-state").textContent = "Aparelho autorizado";
-      root.innerHTML = (data.items || []).map(cameraItem).join("") || empty("Nenhuma câmera integrada ao Gateway G-Host ainda.");
+      if (stateLabel) stateLabel.textContent = "Aparelho autorizado";
+      root.innerHTML = (data.items || []).map(cameraItem).join("") || empty("Nenhuma câmera integrada ao seu projeto ainda.");
     } catch (error) {
-      if (error.code === "DEVICE_REQUIRED") localStorage.removeItem(CAMERA_DEVICE_KEY);
-      $("camera-device-state").textContent = "Acesso bloqueado"; root.innerHTML = empty(error.message);
+      if (["DEVICE_REQUIRED","PORTAL_DEVICE_REVOKED"].includes(error.code)) localStorage.removeItem(CAMERA_DEVICE_KEY);
+      if (stateLabel) stateLabel.textContent = "Acesso bloqueado";
+      root.innerHTML = empty(error.message);
     }
   };
 
   const loadGuardian = async () => {
+    if (!isClientRole(state.role)) return;
+    const nodes = $("guardian-nodes"), events = $("guardian-events");
+    if (!nodes || !events) return;
     try {
       const data = await api("/portal/guardian");
-      $("guardian-nodes").innerHTML = (data.nodes || []).map(guardianNode).join("") || empty("Nenhum Guardião Hub provisionado para esta conta.");
-      $("guardian-events").innerHTML = (data.events || []).map(guardianEvent).join("") || empty("Nenhum evento Guardião/Horus/Sentinela registrado.");
-    } catch (error) { $("guardian-nodes").innerHTML = empty(error.message); $("guardian-events").innerHTML = ""; }
+      nodes.innerHTML = (data.nodes || []).map(guardianNode).join("") || empty("Nenhum Guardião Hub provisionado para esta conta.");
+      events.innerHTML = (data.events || []).map(guardianEvent).join("") || empty("Nenhum evento recente registrado.");
+    } catch (error) {
+      nodes.innerHTML = empty(error.message);
+      events.innerHTML = "";
+    }
   };
 
   const renderEmergencyContacts = async () => {
+    if (!isClientRole(state.role)) return;
+    const root = $("emergency-contacts");
+    if (!root) return;
     const data = await api("/portal/emergency-contacts");
-    $("emergency-contacts").innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.name)}</strong><small>${esc(item.relation || "Contato de emergência")}</small></div><div class="device-actions"><a href="tel:${esc(String(item.phone||"").replace(/[^0-9+]/g,""))}">${esc(item.phone)}</a><button type="button" class="mini-danger" data-delete-contact="${Number(item.id)}">Remover</button></div></article>`).join("") || empty("Nenhum contato cadastrado.");
-    document.querySelectorAll("[data-delete-contact]").forEach(btn => btn.addEventListener("click", async () => { await api(`/portal/emergency-contacts/${btn.dataset.deleteContact}`, {method:"DELETE"}); await renderEmergencyContacts(); }));
+    root.innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.name)}</strong><small>${esc(item.relation || "Contato de emergência")}</small></div><div class="device-actions"><a href="tel:${esc(String(item.phone || "").replace(/[^0-9+]/g, ""))}">${esc(item.phone)}</a><button type="button" class="mini-danger" data-delete-contact="${Number(item.id)}">Remover</button></div></article>`).join("") || empty("Nenhum contato cadastrado.");
+    root.querySelectorAll("[data-delete-contact]").forEach(btn => btn.addEventListener("click", async () => {
+      await api(`/portal/emergency-contacts/${btn.dataset.deleteContact}`, { method:"DELETE" });
+      await renderEmergencyContacts();
+    }));
+  };
+
+  const renderDashboardData = data => {
+    const user = state.role === "usuario";
+    const quotes = data.quotes || [];
+    const configurations = data.configurations || [];
+    const openQuotes = quotes.filter(item => !["recusado","convertido","cancelado"].includes(String(item.status || "").toLowerCase()));
+
+    $("client-configurations").innerHTML = configurations.map(configurationItem).join("") || empty("Nenhuma configuração salva ainda. Use 'Contratar serviço' para começar.");
+    $("client-quotes").innerHTML = quotes.map(quoteItem).join("") || empty("Nenhuma proposta solicitada ainda.");
+    $("client-notifications").innerHTML = (data.notifications || []).map(notificationItem).join("") || empty("Nenhuma notificação.");
+
+    if (user) {
+      $("client-project-count").textContent = String(configurations.length);
+      $("client-asset-count").textContent = String(quotes.length);
+      $("client-service-count").textContent = String(openQuotes.length);
+    } else {
+      $("client-project-count").textContent = String((data.projects || []).length);
+      $("client-asset-count").textContent = String((data.assets || []).length);
+      $("client-service-count").textContent = String((data.services || []).length + (data.supportTickets || []).filter(x => !["resolvido","cancelado"].includes(x.status)).length);
+      $("client-projects").innerHTML = (data.projects || []).map(projectItem).join("") || empty("Nenhum projeto operacional vinculado.");
+      $("client-assets").innerHTML = (data.assets || []).map(assetItem).join("") || empty("Nenhum equipamento registrado.");
+      $("client-contracts").innerHTML = (data.contracts || []).map(contractItem).join("") || empty("Nenhum contrato disponível nesta conta.");
+      $("client-services").innerHTML = (data.services || []).map(serviceItem).join("") || empty("Nenhum serviço ou manutenção registrado.");
+      $("client-support-tickets").innerHTML = (data.supportTickets || []).map(supportTicketItem).join("") || empty("Nenhuma solicitação aberta.");
+    }
+
+    $("client-notification-count").textContent = String((data.notifications || []).filter(x => !x.read_at).length);
   };
 
   const loadDashboard = async () => {
-    setStatus(dashboardStatus, "Atualizando dados...");
+    setStatus("Atualizando sua área...");
     const [me, data] = await Promise.all([api("/portal/me"), api("/portal/dashboard")]);
-    state.me = me; state.dashboard = data;
+    state.me = me;
+    state.dashboard = data;
+    state.role = normalizeRole(me.role);
+
     $("client-welcome").textContent = `Olá, ${me.person?.name || "usuário"}.`;
-    $("client-account-info").textContent = `${me.person?.email || "Conta G-Host"} · perfil ${roleLabel(me.role)}`;
-    $("client-role").hidden = false; $("client-role").textContent = roleLabel(me.role);
-    const adminLink = $("client-admin-link"); if (adminLink) adminLink.hidden = me.role !== "adm";
-    $("visitor-upgrade-note").hidden = me.role !== "visitante";
-    $("client-project-count").textContent = String(data.projects?.length || data.configurations?.length || 0);
-    $("client-asset-count").textContent = String(data.assets?.length || 0);
-    $("client-service-count").textContent = String((data.services?.length || 0) + (data.supportTickets?.filter(x => !["resolvido","cancelado"].includes(x.status)).length || 0));
-    $("client-notification-count").textContent = String(data.notifications?.filter(x => !x.read_at).length || 0);
-    $("client-configurations").innerHTML = (data.configurations || []).map(configurationItem).join("") || empty("Nenhuma configuração salva ainda.");
-    $("client-quotes").innerHTML = (data.quotes || []).map(quoteItem).join("") || empty("Nenhuma proposta solicitada ainda.");
-    $("client-projects").innerHTML = (data.projects || []).map(projectItem).join("") || empty(me.role === "visitante" ? "Disponível após contratação." : "Nenhum projeto operacional vinculado.");
-    $("client-assets").innerHTML = (data.assets || []).map(assetItem).join("") || empty(me.role === "visitante" ? "Disponível após contratação." : "Nenhum equipamento registrado.");
-    $("client-services").innerHTML = (data.services || []).map(serviceItem).join("") || empty("Nenhum serviço registrado.");
-    $("client-contracts").innerHTML = (data.contracts || []).map(contractItem).join("") || empty("Nenhum contrato disponível nesta conta.");
-    $("client-notifications").innerHTML = (data.notifications || []).map(notificationItem).join("") || empty("Nenhuma notificação.");
-    $("client-support-tickets").innerHTML = (data.supportTickets || []).map(supportTicketItem).join("") || empty("Nenhum chamado aberto nesta conta.");
-    await Promise.all([renderDevices(), loadCameras(), loadGuardian(), renderEmergencyContacts()]);
-    setStatus(dashboardStatus, "Dados atualizados.", "success");
+    $("client-account-info").textContent = `${me.person?.email || "Conta G-Host"} · perfil ${roleLabel(state.role)}`;
+    $("client-role").hidden = false;
+    $("client-role").textContent = roleLabel(state.role);
+    const adminLink = $("client-admin-link");
+    if (adminLink) adminLink.hidden = state.role !== "adm";
+
+    setRoleVisibility(state.role);
+    renderDashboardData(data);
+
+    if (isClientRole(state.role)) {
+      await Promise.all([renderDevices(), loadCameras(), loadGuardian(), renderEmergencyContacts()]);
+    }
+
+    setStatus("Dados atualizados.", "success");
   };
 
-  const enterDashboard = async token => {
-    setToken(token); auth.hidden = true; dashboard.hidden = false; logoutBtn.hidden = false;
-    try { await loadDashboard(); } catch (error) { if (error.status === 401) { setToken(""); location.replace("entrar.html"); return; } setStatus(dashboardStatus, error.message, "error"); }
+  const start = async () => {
+    if (!API || !state.token) {
+      clearSessionAndRedirect();
+      return;
+    }
+    dashboard.hidden = false;
+    try {
+      await loadDashboard();
+    } catch (error) {
+      if (error.status === 401 || ["PORTAL_DEVICE_REQUIRED","PORTAL_DEVICE_REVOKED","PORTAL_SESSION_INVALID"].includes(error.code)) {
+        clearSessionAndRedirect();
+        return;
+      }
+      setStatus(error.message, "error");
+    }
   };
 
-  $("tab-login").addEventListener("click", () => showAuthForm("login"));
-  $("tab-register").addEventListener("click", () => showAuthForm("register"));
-  $("tab-reset").addEventListener("click", () => showAuthForm("reset"));
-
-  loginForm.addEventListener("submit", async event => {
-    event.preventDefault(); setStatus(authStatus, "Entrando...");
-    try { const r = await api("/portal/login", { method:"POST", body:JSON.stringify({email:$("login-email").value,password:$("login-password").value}) }); $("login-password").value=""; await enterDashboard(r.token); }
-    catch(error){ setStatus(authStatus,error.message,"error"); }
-  });
-
-  registerForm.addEventListener("submit", async event => {
-    event.preventDefault(); setStatus(authStatus,"Enviando código de confirmação...");
+  $("authorize-camera-device")?.addEventListener("click", async () => {
+    if (!isClientRole(state.role)) return;
+    setStatus("Autorizando este aparelho...");
     try {
-      const r=await api("/portal/register/start",{method:"POST",body:JSON.stringify({name:$("register-name").value,email:$("register-email").value,phone:$("register-phone").value,password:$("register-password").value,acceptTerms:$("accept-terms").checked,acknowledgePrivacy:$("ack-privacy").checked})});
-      state.registerChallenge=r.challengeId; $("verify-email-target").textContent=r.maskedEmail||"seu e-mail"; showAuthForm("verify"); setStatus(authStatus,"Código enviado. Ele expira em 10 minutos.","success"); $("register-code").focus();
-    } catch(error){ setStatus(authStatus,error.message,"error"); }
+      const result = await api("/portal/devices/register", {
+        method:"POST",
+        body:JSON.stringify({
+          deviceId:getDeviceId(),
+          label:navigator.userAgentData?.platform || navigator.platform || "Navegador",
+          purpose:"camera"
+        })
+      });
+      localStorage.setItem(CAMERA_DEVICE_KEY, result.deviceToken);
+      await Promise.all([renderDevices(), loadCameras()]);
+      setStatus("Aparelho autorizado para CFTV.", "success");
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
   });
 
-  verifyForm.addEventListener("submit", async event => {
-    event.preventDefault(); setStatus(authStatus,"Confirmando conta...");
-    try { const r=await api("/portal/register/verify",{method:"POST",body:JSON.stringify({challengeId:state.registerChallenge,code:$("register-code").value})}); state.registerChallenge=""; $("register-password").value=""; $("register-code").value=""; await enterDashboard(r.token); }
-    catch(error){ setStatus(authStatus,error.message,"error"); }
-  });
-  $("cancel-verify").addEventListener("click",()=>{state.registerChallenge="";showAuthForm("register");});
-
-  resetForm.addEventListener("submit", async event => {
-    event.preventDefault();setStatus(authStatus,"Enviando código...");
-    try{const r=await api("/portal/password/reset/start",{method:"POST",body:JSON.stringify({email:$("reset-email").value})});state.resetChallenge=r.challengeId||"";if(!state.resetChallenge){setStatus(authStatus,"Se existir uma conta com este e-mail, você receberá as instruções.","success");return;}showAuthForm("reset-verify");setStatus(authStatus,"Código enviado.","success");}
-    catch(error){setStatus(authStatus,error.message,"error");}
-  });
-  resetVerifyForm.addEventListener("submit",async event=>{event.preventDefault();setStatus(authStatus,"Alterando senha...");try{await api("/portal/password/reset/verify",{method:"POST",body:JSON.stringify({challengeId:state.resetChallenge,code:$("reset-code").value,password:$("reset-password").value})});state.resetChallenge="";showAuthForm("login");setStatus(authStatus,"Senha atualizada. Você já pode entrar.","success");}catch(error){setStatus(authStatus,error.message,"error");}});
-
-  $("authorize-camera-device").addEventListener("click", async () => {
-    setStatus(dashboardStatus,"Autorizando este aparelho...");
+  $("support-form")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!isClientRole(state.role)) return;
+    setStatus("Enviando sua solicitação...");
     try {
-      const r=await api("/portal/devices/register",{method:"POST",body:JSON.stringify({deviceId:getDeviceId(),label:navigator.userAgentData?.platform||navigator.platform||"Navegador",purpose:"camera"})});
-      localStorage.setItem(CAMERA_DEVICE_KEY,r.deviceToken); await renderDevices(); await loadCameras(); setStatus(dashboardStatus,"Aparelho autorizado para CFTV.","success");
-    } catch(error){setStatus(dashboardStatus,error.message,"error");}
+      await api("/portal/support", {
+        method:"POST",
+        body:JSON.stringify({
+          subject:$("support-subject").value,
+          priority:$("support-priority").value,
+          description:$("support-description").value
+        })
+      });
+      event.target.reset();
+      setStatus("Solicitação enviada. Você pode acompanhar o andamento nesta página.", "success");
+      await loadDashboard();
+      location.hash = "acompanhamento";
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
   });
 
-  $("support-form").addEventListener("submit",async event=>{event.preventDefault();setStatus(dashboardStatus,"Abrindo chamado...");try{await api("/portal/support",{method:"POST",body:JSON.stringify({subject:$("support-subject").value,priority:$("support-priority").value,description:$("support-description").value})});event.target.reset();setStatus(dashboardStatus,"Chamado aberto com sucesso.","success");await loadDashboard();}catch(error){setStatus(dashboardStatus,error.message,"error");}});
-
-  $("notifications-read").addEventListener("click",async()=>{try{await api("/portal/notifications/read",{method:"POST",body:"{}"});await loadDashboard();}catch(error){setStatus(dashboardStatus,error.message,"error");}});
-
-  $("emergency-contact-form").addEventListener("submit",async event=>{event.preventDefault();try{await api("/portal/emergency-contacts",{method:"POST",body:JSON.stringify({name:$("emergency-name").value,relation:$("emergency-relation").value,phone:$("emergency-phone").value})});event.target.reset();await renderEmergencyContacts();}catch(error){setStatus(dashboardStatus,error.message,"error");}});
-
-  $("get-location").addEventListener("click",()=>{
-    const out=$("location-result");out.hidden=false;out.textContent="Obtendo localização com sua autorização...";
-    if(!navigator.geolocation){out.textContent="Geolocalização não disponível neste aparelho.";return;}
-    navigator.geolocation.getCurrentPosition(pos=>{const lat=pos.coords.latitude.toFixed(6),lon=pos.coords.longitude.toFixed(6),acc=Math.round(pos.coords.accuracy);out.replaceChildren();const p=document.createElement("p");p.textContent=`Latitude ${lat} · Longitude ${lon} · precisão aproximada ${acc} m.`;const a=document.createElement("a");a.href=`https://maps.google.com/?q=${encodeURIComponent(`${lat},${lon}`)}`;a.target="_blank";a.rel="noopener";a.textContent="Abrir localização no mapa";out.append(p,a);},()=>{out.textContent="Localização não autorizada ou indisponível. Você pode usar o endereço cadastrado do imóvel ao falar com o serviço de emergência.";},{enableHighAccuracy:true,timeout:10000,maximumAge:30000});
+  $("notifications-read")?.addEventListener("click", async () => {
+    try {
+      await api("/portal/notifications/read", { method:"POST", body:"{}" });
+      await loadDashboard();
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
   });
 
-  $("client-refresh").addEventListener("click",()=>loadDashboard().catch(error=>setStatus(dashboardStatus,error.message,"error")));
-  logoutBtn.addEventListener("click",async()=>{try{if(state.token)await api("/portal/logout",{method:"POST",body:"{}"});}catch(_){}setToken("");location.replace("entrar.html");});
+  $("emergency-contact-form")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    if (!isClientRole(state.role)) return;
+    try {
+      await api("/portal/emergency-contacts", {
+        method:"POST",
+        body:JSON.stringify({
+          name:$("emergency-name").value,
+          relation:$("emergency-relation").value,
+          phone:$("emergency-phone").value
+        })
+      });
+      event.target.reset();
+      await renderEmergencyContacts();
+    } catch (error) {
+      setStatus(error.message, "error");
+    }
+  });
 
-  if(!API)setStatus(authStatus,"Backend de segurança ainda não configurado.","error");
-  else if(state.token) enterDashboard(state.token);
-  else location.replace("entrar.html");
+  $("get-location")?.addEventListener("click", () => {
+    if (!isClientRole(state.role)) return;
+    const out = $("location-result");
+    if (!out) return;
+    out.hidden = false;
+    out.textContent = "Obtendo localização com sua autorização...";
+    if (!navigator.geolocation) {
+      out.textContent = "Geolocalização não disponível neste aparelho.";
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(pos => {
+      const lat = pos.coords.latitude.toFixed(6), lon = pos.coords.longitude.toFixed(6), acc = Math.round(pos.coords.accuracy);
+      out.replaceChildren();
+      const p = document.createElement("p");
+      p.textContent = `Latitude ${lat} · Longitude ${lon} · precisão aproximada ${acc} m.`;
+      const a = document.createElement("a");
+      a.href = `https://maps.google.com/?q=${encodeURIComponent(`${lat},${lon}`)}`;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "Abrir localização no mapa";
+      out.append(p, a);
+    }, () => {
+      out.textContent = "Localização não autorizada ou indisponível.";
+    }, { enableHighAccuracy:true, timeout:10000, maximumAge:30000 });
+  });
+
+  $("client-refresh")?.addEventListener("click", () => loadDashboard().catch(error => {
+    if (error.status === 401) return clearSessionAndRedirect();
+    setStatus(error.message, "error");
+  }));
+
+  logoutBtn?.addEventListener("click", async () => {
+    try {
+      if (state.token) await api("/portal/logout", { method:"POST", body:"{}" });
+    } catch (_) {}
+    clearSessionAndRedirect();
+  });
+
+  start();
 })();
