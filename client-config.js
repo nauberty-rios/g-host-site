@@ -22,8 +22,8 @@ window.GHOST_CLIENT_CONFIG = {
     return;
   }
 
-  // Toda chamada autenticada do portal leva o segredo do aparelho confiável.
-  // Se a chamada já estiver usando um token específico de CFTV, ele é preservado.
+  // Toda chamada autenticada do portal leva o segredo do aparelho confiável quando disponível.
+  // Durante a troca do Worker, sessões antigas continuam funcionando até o servidor passar a exigir o aparelho.
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     let target = "";
@@ -39,21 +39,31 @@ window.GHOST_CLIENT_CONFIG = {
       }
       nextInit = { ...init, headers };
     }
-    return nativeFetch(input, nextInit);
+
+    const response = await nativeFetch(input, nextInit);
+
+    // Quando o novo Worker entrar em produção, uma sessão antiga sem aparelho
+    // será encerrada e o usuário voltará ao login seguro para autorizar este dispositivo.
+    if (page === "cliente.html" && apiBase && target.startsWith(apiBase) && response.status === 401) {
+      const data = await response.clone().json().catch(() => ({}));
+      if (["PORTAL_DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED", "PORTAL_SESSION_INVALID"].includes(String(data?.code || ""))) {
+        sessionStorage.removeItem(tokenKey);
+        location.replace("entrar.html");
+      }
+    }
+
+    return response;
   };
 
-  // A área autenticada não aceita mais uma sessão antiga sem aparelho de portal vinculado.
+  // Sem sessão não existe área autenticada. O aparelho é exigido pelo novo Worker,
+  // mas não bloqueamos antecipadamente para manter uma transição segura do backend atual.
   if (page === "cliente.html") {
     const token = sessionStorage.getItem(tokenKey) || "";
-    const device = localStorage.getItem(deviceKey) || "";
-    if (!token || !device) {
-      sessionStorage.removeItem(tokenKey);
+    if (!token) {
       location.replace("entrar.html");
       return;
     }
 
-    // Se uma sessão expirar e a tela antiga de login interno aparecer, encaminha
-    // para o fluxo dedicado, que possui verificação de novo aparelho por e-mail.
     document.addEventListener("submit", event => {
       const id = event.target?.id || "";
       const route = {
