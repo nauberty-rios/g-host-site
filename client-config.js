@@ -134,7 +134,9 @@ window.GHOST_CLIENT_CONFIG = {
 
   if (page === "cliente.html") {
     const token = sessionStorage.getItem(tokenKey) || "";
-    if (!token) {
+    if (cookieAuthEnabled) {
+      if (!token) sessionStorage.setItem(tokenKey, COOKIE_SENTINEL);
+    } else if (!token) {
       location.replace("entrar.html");
       return;
     }
