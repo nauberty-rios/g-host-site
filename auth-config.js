@@ -1,6 +1,8 @@
 window.GHOST_AUTH_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
-  inactivitySeconds: 900
+  inactivitySeconds: 900,
+  cookieAuthEnabled: false,
+  turnstileSiteKey: ""
 };
 
 (() => {
@@ -8,6 +10,8 @@ window.GHOST_AUTH_CONFIG = {
 
   const cfg = window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
+  const COOKIE_SENTINEL = "__gh_cookie__";
   const OWNER_DEVICE_KEY = "ghost_owner_device_v1";
   const STAFF_DEVICE_KEY = "ghost_staff_device_v1";
 
@@ -18,7 +22,6 @@ window.GHOST_AUTH_CONFIG = {
     "staff-visibilidade.html"
   ]);
 
-  // Defesa contra clickjacking nas telas administrativas.
   if (protectedPages.has(page) && window.top !== window.self) {
     window.stop();
     document.documentElement.replaceChildren();
@@ -35,13 +38,19 @@ window.GHOST_AUTH_CONFIG = {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
 
-      // Toda chamada autenticada do Dono/ADM leva também a identidade do aparelho.
+      if (cookieAuthEnabled) {
+        if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
+        if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+      }
+
       if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
         const kind = window.GHOST_CONTROL_CONTEXT?.kind || (page.startsWith("staff") ? "staff" : "owner");
         const device = localStorage.getItem(kind === "staff" ? STAFF_DEVICE_KEY : OWNER_DEVICE_KEY) || "";
-        if (device) headers.set("X-Ghost-Device", device);
+        if (device && (!cookieAuthEnabled || device !== COOKIE_SENTINEL)) headers.set("X-Ghost-Device", device);
       }
-      nextInit = { ...init, headers };
+
+      nextInit = { ...init, headers, cache: "no-store", referrerPolicy: "no-referrer" };
+      if (cookieAuthEnabled) nextInit.credentials = "include";
     }
 
     const response = await nativeFetch(input, nextInit);
@@ -49,8 +58,6 @@ window.GHOST_AUTH_CONFIG = {
     try {
       if (apiBase && target.startsWith(apiBase) && !response.ok) {
         const data = await response.clone().json().catch(() => ({}));
-        // Em aparelho novo, guarda somente o segredo pendente. O Worker não cria
-        // sessão até o aparelho ser explicitamente autorizado.
         if (data?.code === "OWNER_DEVICE_PENDING" && data?.ownerDeviceToken) {
           localStorage.setItem(OWNER_DEVICE_KEY, String(data.ownerDeviceToken));
         }
@@ -62,6 +69,14 @@ window.GHOST_AUTH_CONFIG = {
 
     return response;
   };
+
+  if (!document.querySelector('script[data-ghost-phase1]')) {
+    const script = document.createElement("script");
+    script.src = "security-phase1.js";
+    script.async = false;
+    script.dataset.ghostPhase1 = "1";
+    document.head.append(script);
+  }
 
   if (!document.querySelector('script[data-ghost-device-access]')) {
     const script = document.createElement("script");

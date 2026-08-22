@@ -1,7 +1,9 @@
 window.GHOST_CLIENT_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
   sessionStorageKey: "ghost_portal_token",
-  portalDeviceStorageKey: "ghost_portal_device_v1"
+  portalDeviceStorageKey: "ghost_portal_device_v1",
+  cookieAuthEnabled: false,
+  turnstileSiteKey: ""
 };
 
 (() => {
@@ -9,6 +11,8 @@ window.GHOST_CLIENT_CONFIG = {
 
   const cfg = window.GHOST_CLIENT_CONFIG;
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
+  const COOKIE_SENTINEL = "__gh_cookie__";
   const tokenKey = cfg.sessionStorageKey;
   const deviceKey = cfg.portalDeviceStorageKey;
   const page = location.pathname.split("/").pop() || "";
@@ -22,8 +26,6 @@ window.GHOST_CLIENT_CONFIG = {
     return;
   }
 
-  // Toda chamada autenticada do portal leva o segredo do aparelho confiável quando disponível.
-  // Durante a troca do Worker, sessões antigas continuam funcionando até o servidor passar a exigir o aparelho.
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     let target = "";
@@ -33,17 +35,23 @@ window.GHOST_CLIENT_CONFIG = {
     if (apiBase && target.startsWith(apiBase)) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
+
+      if (cookieAuthEnabled) {
+        if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
+        if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+      }
+
       if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
         const device = localStorage.getItem(deviceKey) || "";
-        if (device) headers.set("X-Ghost-Device", device);
+        if (device && (!cookieAuthEnabled || device !== COOKIE_SENTINEL)) headers.set("X-Ghost-Device", device);
       }
-      nextInit = { ...init, headers };
+
+      nextInit = { ...init, headers, cache: "no-store", referrerPolicy: "no-referrer" };
+      if (cookieAuthEnabled) nextInit.credentials = "include";
     }
 
     const response = await nativeFetch(input, nextInit);
 
-    // Quando o novo Worker entrar em produção, uma sessão antiga sem aparelho
-    // será encerrada e o usuário voltará ao login seguro para autorizar este dispositivo.
     if (page === "cliente.html" && apiBase && target.startsWith(apiBase) && response.status === 401) {
       const data = await response.clone().json().catch(() => ({}));
       if (["PORTAL_DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED", "PORTAL_SESSION_INVALID"].includes(String(data?.code || ""))) {
@@ -55,8 +63,6 @@ window.GHOST_CLIENT_CONFIG = {
     return response;
   };
 
-  // Sem sessão não existe área autenticada. O aparelho é exigido pelo novo Worker,
-  // mas não bloqueamos antecipadamente para manter uma transição segura do backend atual.
   if (page === "cliente.html") {
     const token = sessionStorage.getItem(tokenKey) || "";
     if (!token) {
@@ -78,6 +84,14 @@ window.GHOST_CLIENT_CONFIG = {
       event.stopImmediatePropagation();
       location.replace(route);
     }, true);
+  }
+
+  if (!document.querySelector('script[data-ghost-phase1]')) {
+    const script = document.createElement("script");
+    script.src = "security-phase1.js";
+    script.async = false;
+    script.dataset.ghostPhase1 = "1";
+    document.head.append(script);
   }
 
   if (!document.querySelector('script[data-ghost-device-access]')) {
