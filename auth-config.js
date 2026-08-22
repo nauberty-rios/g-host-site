@@ -1,6 +1,7 @@
 window.GHOST_AUTH_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
-  inactivitySeconds: 900
+  inactivitySeconds: 900,
+  turnstileSiteKey: ""
 };
 
 (() => {
@@ -18,7 +19,6 @@ window.GHOST_AUTH_CONFIG = {
     "staff-visibilidade.html"
   ]);
 
-  // Defesa contra clickjacking nas telas administrativas.
   if (protectedPages.has(page) && window.top !== window.self) {
     window.stop();
     document.documentElement.replaceChildren();
@@ -34,8 +34,6 @@ window.GHOST_AUTH_CONFIG = {
     if (apiBase && target.startsWith(apiBase)) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
-
-      // Toda chamada autenticada do Dono/ADM leva também a identidade do aparelho.
       if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
         const kind = window.GHOST_CONTROL_CONTEXT?.kind || (page.startsWith("staff") ? "staff" : "owner");
         const device = localStorage.getItem(kind === "staff" ? STAFF_DEVICE_KEY : OWNER_DEVICE_KEY) || "";
@@ -49,8 +47,6 @@ window.GHOST_AUTH_CONFIG = {
     try {
       if (apiBase && target.startsWith(apiBase) && !response.ok) {
         const data = await response.clone().json().catch(() => ({}));
-        // Em aparelho novo, guarda somente o segredo pendente. O Worker não cria
-        // sessão até o aparelho ser explicitamente autorizado.
         if (data?.code === "OWNER_DEVICE_PENDING" && data?.ownerDeviceToken) {
           localStorage.setItem(OWNER_DEVICE_KEY, String(data.ownerDeviceToken));
         }
@@ -62,6 +58,14 @@ window.GHOST_AUTH_CONFIG = {
 
     return response;
   };
+
+  if (!document.querySelector('script[data-ghost-phase1]')) {
+    const script = document.createElement("script");
+    script.src = "security-phase1.js";
+    script.async = false;
+    script.dataset.ghostPhase1 = "1";
+    document.head.append(script);
+  }
 
   if (!document.querySelector('script[data-ghost-device-access]')) {
     const script = document.createElement("script");
