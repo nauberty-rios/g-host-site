@@ -8,6 +8,7 @@
   const cfg = window.GHOST_CLIENT_CONFIG || window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
   const siteKey = String(cfg.turnstileSiteKey || "").trim();
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
   const turnstileState = new Map();
   const widgetIds = new Map();
 
@@ -65,8 +66,10 @@
     if (!sameApi) return previousFetch(input, init);
 
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined) || {});
-    if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
-    if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+    if (cookieAuthEnabled) {
+      if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
+      if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+    }
 
     const action = actionForUrl(target);
     let body = init?.body;
@@ -79,17 +82,20 @@
       } catch (_) {}
     }
 
-    const response = await previousFetch(input, {
+    const nextInit = {
       ...init,
       body,
       headers,
-      credentials: "include",
       cache: "no-store",
       referrerPolicy: "no-referrer"
-    });
+    };
+    if (cookieAuthEnabled) nextInit.credentials = "include";
+
+    const response = await previousFetch(input, nextInit);
 
     if (action) resetAction(action);
 
+    if (!cookieAuthEnabled) return response;
     return cloneJsonResponse(response, data => {
       let next = data;
       if (data?.sessionMode === "cookie") {
