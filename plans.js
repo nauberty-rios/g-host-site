@@ -1,5 +1,6 @@
-(() => {
+(async () => {
   "use strict";
+  try { await (window.GHOST_PUBLIC_CONFIG_READY || Promise.resolve(false)); } catch (_) {}
   const source = window.GHOST_PLANS || {};
   const visibility = window.GHOST_VISIBILITY || {options:{}};
   const plans = Array.isArray(source.plans) ? source.plans : [];
