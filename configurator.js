@@ -1,5 +1,6 @@
-(() => {
+(async () => {
   "use strict";
+  try { await (window.GHOST_PUBLIC_CONFIG_READY || Promise.resolve(false)); } catch (_) {}
   const plans=(window.GHOST_PLANS?.plans||[]).filter(p=>p?.enabled!==false && (p.visibility||"public")==="public" && p.allowSelfService!==false);
   const categories=(window.GHOST_CATALOG?.categories||[]).filter(c=>c?.enabled!==false);
   const allServices=window.GHOST_CATALOG?.services||[];
