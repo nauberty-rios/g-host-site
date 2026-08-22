@@ -2,6 +2,7 @@ window.GHOST_AUTH_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
   inactivitySeconds: 900,
   cookieAuthEnabled: false,
+  cookieApiHost: "api.g-host.seg.br",
   turnstileSiteKey: ""
 };
 
@@ -10,7 +11,11 @@ window.GHOST_AUTH_CONFIG = {
 
   const cfg = window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
-  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
+  const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
+  const cookieHostMatches = (() => {
+    try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
+  })();
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true && cookieHostMatches;
   const COOKIE_SENTINEL = "__gh_cookie__";
   const OWNER_DEVICE_KEY = "ghost_owner_device_v1";
   const STAFF_DEVICE_KEY = "ghost_staff_device_v1";

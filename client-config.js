@@ -3,6 +3,7 @@ window.GHOST_CLIENT_CONFIG = {
   sessionStorageKey: "ghost_portal_token",
   portalDeviceStorageKey: "ghost_portal_device_v1",
   cookieAuthEnabled: false,
+  cookieApiHost: "api.g-host.seg.br",
   turnstileSiteKey: ""
 };
 
@@ -11,7 +12,11 @@ window.GHOST_CLIENT_CONFIG = {
 
   const cfg = window.GHOST_CLIENT_CONFIG;
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
-  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
+  const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
+  const cookieHostMatches = (() => {
+    try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
+  })();
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true && cookieHostMatches;
   const COOKIE_SENTINEL = "__gh_cookie__";
   const tokenKey = cfg.sessionStorageKey;
   const deviceKey = cfg.portalDeviceStorageKey;
