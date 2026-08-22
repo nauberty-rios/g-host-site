@@ -127,15 +127,20 @@
       });
       challengeId = result.challengeId || "";
       if (!challengeId) {
-        setStatus("Se existir uma conta com este e-mail, as instruções serão enviadas.", "success");
+        setStatus(result.message || "Se existir uma conta com este e-mail, as instruções serão enviadas.", "success");
         return;
       }
       $("reset-step-one").hidden = true;
       $("reset-step-two").hidden = false;
-      setStatus("Código enviado para o e-mail da conta.", "success");
+      setStatus(result.message || "Código de recuperação enviado.", "success");
+      $("reset-code").value = "";
+      $("reset-password").value = "";
       $("reset-code").focus();
     } catch (error) {
-      setStatus(error.message, "error");
+      const message = error.code === "RECOVERY_EMAIL_UNAVAILABLE"
+        ? "Não foi possível enviar o código de recuperação agora. Tente novamente em alguns instantes."
+        : error.message;
+      setStatus(message, "error");
     }
   });
 
@@ -143,7 +148,7 @@
     event.preventDefault();
     setStatus("Atualizando senha...");
     try {
-      await api("/portal/password/reset/verify", {
+      const result = await api("/portal/password/reset/verify", {
         method: "POST",
         body: JSON.stringify({
           challengeId,
@@ -151,9 +156,12 @@
           password: $("reset-password").value
         })
       });
+      challengeId = "";
+      $("reset-code").value = "";
+      $("reset-password").value = "";
       $("reset-step-two").hidden = true;
       $("reset-done").hidden = false;
-      setStatus("Senha alterada com sucesso.", "success");
+      setStatus(result.message || "Senha alterada com sucesso.", "success");
     } catch (error) {
       setStatus(error.message, "error");
     }
@@ -161,6 +169,8 @@
 
   $("reset-back")?.addEventListener("click", () => {
     challengeId = "";
+    $("reset-code").value = "";
+    $("reset-password").value = "";
     $("reset-step-two").hidden = true;
     $("reset-step-one").hidden = false;
     setStatus("");
