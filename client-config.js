@@ -2,6 +2,7 @@ window.GHOST_CLIENT_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
   sessionStorageKey: "ghost_portal_token",
   portalDeviceStorageKey: "ghost_portal_device_v1",
+  cookieAuthEnabled: false,
   turnstileSiteKey: ""
 };
 
@@ -10,6 +11,7 @@ window.GHOST_CLIENT_CONFIG = {
 
   const cfg = window.GHOST_CLIENT_CONFIG;
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
   const COOKIE_SENTINEL = "__gh_cookie__";
   const tokenKey = cfg.sessionStorageKey;
   const deviceKey = cfg.portalDeviceStorageKey;
@@ -33,13 +35,19 @@ window.GHOST_CLIENT_CONFIG = {
     if (apiBase && target.startsWith(apiBase)) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
-      if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
-      if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+
+      if (cookieAuthEnabled) {
+        if ((headers.get("Authorization") || "").trim() === `Bearer ${COOKIE_SENTINEL}`) headers.delete("Authorization");
+        if ((headers.get("X-Ghost-Device") || "").trim() === COOKIE_SENTINEL) headers.delete("X-Ghost-Device");
+      }
+
       if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
         const device = localStorage.getItem(deviceKey) || "";
-        if (device && device !== COOKIE_SENTINEL) headers.set("X-Ghost-Device", device);
+        if (device && (!cookieAuthEnabled || device !== COOKIE_SENTINEL)) headers.set("X-Ghost-Device", device);
       }
-      nextInit = { ...init, headers, credentials: "include", cache: "no-store", referrerPolicy: "no-referrer" };
+
+      nextInit = { ...init, headers, cache: "no-store", referrerPolicy: "no-referrer" };
+      if (cookieAuthEnabled) nextInit.credentials = "include";
     }
 
     const response = await nativeFetch(input, nextInit);
