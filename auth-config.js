@@ -20,6 +20,7 @@ window.GHOST_AUTH_CONFIG = {
 
   // Defesa contra clickjacking nas telas administrativas.
   if (protectedPages.has(page) && window.top !== window.self) {
+    window.stop();
     document.documentElement.replaceChildren();
     return;
   }
