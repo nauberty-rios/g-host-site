@@ -11,13 +11,12 @@
   const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
   const turnstileState = new Map();
   const widgetIds = new Map();
+  const csrfTokens = new Map();
 
   const protectedActions = new Map([
     ["/portal/login", "login"],
     ["/portal/register/start", "register"],
-    ["/portal/password/reset/start", "password_reset"],
-    ["/staff/password", "staff_login"],
-    ["/auth/password", "owner_login"]
+    ["/portal/password/reset/start", "password_reset"]
   ]);
 
   const clearLegacySecrets = () => {
@@ -28,14 +27,71 @@
     try { SESSION_KEYS.forEach(key => sessionStorage.setItem(key, COOKIE_SENTINEL)); } catch (_) {}
   };
 
-  const actionForUrl = value => {
+  const parseApiUrl = value => {
     try {
       const url = new URL(value, location.href);
-      if (!apiBase || !url.href.startsWith(apiBase)) return "";
-      return protectedActions.get(url.pathname) || "";
+      return apiBase && url.href.startsWith(apiBase) ? url : null;
     } catch (_) {
-      return "";
+      return null;
     }
+  };
+
+  const actionForUrl = value => {
+    const url = parseApiUrl(value);
+    return url ? (protectedActions.get(url.pathname) || "") : "";
+  };
+
+  const csrfScopeForPath = path => {
+    if (path.startsWith("/portal/")) return "portal";
+    if (path.startsWith("/staff/")) return "staff";
+    if (path.startsWith("/auth/")) return "owner";
+    if (path.startsWith("/admin/") || path.startsWith("/db/") || path.startsWith("/publish")) {
+      const kind = window.GHOST_CONTROL_CONTEXT?.kind;
+      return kind === "staff" ? "staff" : "owner";
+    }
+    return "";
+  };
+
+  const csrfPublicMutation = path => new Set([
+    "/analytics/event",
+    "/portal/register/start",
+    "/portal/register/verify",
+    "/portal/login",
+    "/portal/login/device/verify",
+    "/portal/password/reset/start",
+    "/portal/password/reset/verify",
+    "/staff/password",
+    "/staff/email/verify",
+    "/staff/totp/verify",
+    "/auth/password",
+    "/auth/email/verify",
+    "/auth/totp/verify"
+  ]).has(path);
+
+  const csrfEndpoint = scope => ({
+    portal: "/portal/csrf",
+    staff: "/staff/csrf",
+    owner: "/auth/csrf"
+  }[scope] || "");
+
+  const ensureCsrf = async scope => {
+    if (!cookieAuthEnabled || !scope) return "";
+    const cached = String(csrfTokens.get(scope) || "");
+    if (cached) return cached;
+    const endpoint = csrfEndpoint(scope);
+    if (!endpoint) return "";
+    const response = await previousFetch(`${apiBase}${endpoint}`, {
+      method: "GET",
+      headers: { "Accept": "application/json" },
+      credentials: "include",
+      cache: "no-store",
+      referrerPolicy: "no-referrer"
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.csrfToken) return "";
+    const token = String(data.csrfToken);
+    csrfTokens.set(scope, token);
+    return token;
   };
 
   const resetAction = action => {
@@ -62,8 +118,8 @@
   const previousFetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     const target = typeof input === "string" ? input : String(input?.url || "");
-    const sameApi = Boolean(apiBase && target.startsWith(apiBase));
-    if (!sameApi) return previousFetch(input, init);
+    const url = parseApiUrl(target);
+    if (!url) return previousFetch(input, init);
 
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined) || {});
     if (cookieAuthEnabled) {
@@ -82,6 +138,13 @@
       } catch (_) {}
     }
 
+    const method = String(init?.method || (input instanceof Request ? input.method : "GET") || "GET").toUpperCase();
+    const scope = csrfScopeForPath(url.pathname);
+    if (cookieAuthEnabled && ["POST", "PUT", "DELETE"].includes(method) && !csrfPublicMutation(url.pathname)) {
+      const csrf = await ensureCsrf(scope);
+      if (csrf) headers.set("X-Ghost-CSRF", csrf);
+    }
+
     const nextInit = {
       ...init,
       body,
@@ -95,12 +158,22 @@
 
     if (action) resetAction(action);
 
+    if (cookieAuthEnabled && !response.ok && scope) {
+      try {
+        const data = await response.clone().json().catch(() => ({}));
+        if (["CSRF_INVALID", "PORTAL_SESSION_INVALID", "STAFF_SESSION_INVALID", "OWNER_SESSION_INVALID"].includes(String(data?.code || ""))) {
+          csrfTokens.delete(scope);
+        }
+      } catch (_) {}
+    }
+
     if (!cookieAuthEnabled) return response;
     return cloneJsonResponse(response, data => {
       let next = data;
       if (data?.sessionMode === "cookie") {
         clearLegacySecrets();
         setCookieSentinel();
+        csrfTokens.clear();
         if (!data.token) next = { ...next, token: COOKIE_SENTINEL };
       }
       if (data?.deviceMode === "cookie") {
@@ -116,8 +189,6 @@
     if (path === "entrar.html") return [["login-form", "login"]];
     if (path === "cadastro.html") return [["register-form", "register"]];
     if (path === "recuperar-senha.html") return [["reset-start-form", "password_reset"]];
-    if (path.startsWith("staff")) return [["step-password", "staff_login"]];
-    if (["admin.html", "planos-admin.html", "catalogo-admin.html", "visibilidade-admin.html"].includes(path)) return [["step-password", "owner_login"]];
     return [];
   };
 
