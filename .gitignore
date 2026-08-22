@@ -1,0 +1,19 @@
+# Segredos e ambiente local
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.log
+
+# Backend e infraestrutura não devem ficar no repositório público do site
+worker.js
+G-HOST-WORKER-*.js
+wrangler.toml
+publisher-worker/
+*.sql
+
+# Arquivos locais
+.DS_Store
+Thumbs.db
