@@ -11,28 +11,45 @@ window.GHOST_AUTH_CONFIG = {
   const OWNER_DEVICE_KEY = "ghost_owner_device_v1";
   const STAFF_DEVICE_KEY = "ghost_staff_device_v1";
 
-  // Painéis administrativos não devem funcionar embutidos em outro site.
   const page = location.pathname.split("/").pop() || "";
   const protectedPages = new Set([
     "admin.html", "staff.html", "planos-admin.html", "catalogo-admin.html",
     "visibilidade-admin.html", "staff-planos.html", "staff-catalogo.html",
     "staff-visibilidade.html"
   ]);
+
+  // Defesa contra clickjacking nas telas administrativas.
   if (protectedPages.has(page) && window.top !== window.self) {
     document.documentElement.replaceChildren();
     return;
   }
 
-  // Em um aparelho novo, o Worker pode negar a sessão mas devolver o segredo
-  // do aparelho pendente. Guardamos somente esse segredo; nenhum token de sessão
-  // é criado até o aparelho ser explicitamente autorizado no servidor.
   const nativeFetch = window.fetch.bind(window);
-  window.fetch = async (...args) => {
-    const response = await nativeFetch(...args);
+  window.fetch = async (input, init = {}) => {
+    let target = "";
+    try { target = typeof input === "string" ? input : String(input?.url || ""); } catch (_) {}
+
+    let nextInit = init;
+    if (apiBase && target.startsWith(apiBase)) {
+      const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
+      const headers = new Headers(originalHeaders || {});
+
+      // Toda chamada autenticada do Dono/ADM leva também a identidade do aparelho.
+      if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
+        const kind = window.GHOST_CONTROL_CONTEXT?.kind || (page.startsWith("staff") ? "staff" : "owner");
+        const device = localStorage.getItem(kind === "staff" ? STAFF_DEVICE_KEY : OWNER_DEVICE_KEY) || "";
+        if (device) headers.set("X-Ghost-Device", device);
+      }
+      nextInit = { ...init, headers };
+    }
+
+    const response = await nativeFetch(input, nextInit);
+
     try {
-      const target = typeof args[0] === "string" ? args[0] : String(args[0]?.url || "");
       if (apiBase && target.startsWith(apiBase) && !response.ok) {
         const data = await response.clone().json().catch(() => ({}));
+        // Em aparelho novo, guarda somente o segredo pendente. O Worker não cria
+        // sessão até o aparelho ser explicitamente autorizado.
         if (data?.code === "OWNER_DEVICE_PENDING" && data?.ownerDeviceToken) {
           localStorage.setItem(OWNER_DEVICE_KEY, String(data.ownerDeviceToken));
         }
@@ -41,6 +58,7 @@ window.GHOST_AUTH_CONFIG = {
         }
       }
     } catch (_) {}
+
     return response;
   };
 
