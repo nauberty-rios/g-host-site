@@ -1,14 +1,25 @@
 (() => {
   "use strict";
 
-  const API = String(window.GHOST_CLIENT_CONFIG?.apiBase || "").replace(/\/$/, "");
-  const TOKEN_KEY = window.GHOST_CLIENT_CONFIG?.sessionStorageKey || "ghost_portal_token";
+  const cfg = window.GHOST_CLIENT_CONFIG || {};
+  const API = String(cfg.apiBase || "").replace(/\/$/, "");
+  const TOKEN_KEY = cfg.sessionStorageKey || "ghost_portal_token";
   const DEVICE_ID_KEY = "ghost_device_id_v1";
   const CAMERA_DEVICE_KEY = "ghost_camera_device_token_v1";
+  const COOKIE_SENTINEL = "__gh_cookie__";
   const $ = id => document.getElementById(id);
 
+  const cookieMode = (() => {
+    if (cfg.cookieAuthEnabled !== true || !API) return false;
+    try {
+      return new URL(API).hostname.toLowerCase() === String(cfg.cookieApiHost || "api.g-host.seg.br").toLowerCase();
+    } catch (_) {
+      return false;
+    }
+  })();
+
   const state = {
-    token: sessionStorage.getItem(TOKEN_KEY) || "",
+    token: sessionStorage.getItem(TOKEN_KEY) || (cookieMode ? COOKIE_SENTINEL : ""),
     me: null,
     dashboard: null,
     role: "usuario"
@@ -20,35 +31,72 @@
 
   const setStatus = (text = "", type = "") => {
     if (!dashboardStatus) return;
-    dashboardStatus.textContent = text;
+    dashboardStatus.textContent = String(text || "");
     dashboardStatus.className = `client-status${type ? ` ${type}` : ""}`;
   };
 
-  const esc = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;", "<":"&lt;", ">":"&gt;", "\"":"&quot;", "'":"&#39;"
-  }[ch]));
-  const empty = text => `<div class="client-empty">${esc(text)}</div>`;
-  const normalizeRole = role => role === "visitante" ? "usuario" : (["usuario","cliente","adm","dono"].includes(role) ? role : "usuario");
-  const roleLabel = role => ({ usuario:"Usuário", cliente:"Cliente", adm:"ADM", dono:"Dono" }[normalizeRole(role)] || "Usuário");
-  const isClientRole = role => ["cliente","adm","dono"].includes(normalizeRole(role));
+  const make = (tag, className = "", text = undefined) => {
+    const el = document.createElement(tag);
+    if (className) el.className = className;
+    if (text !== undefined) el.textContent = String(text ?? "");
+    return el;
+  };
+
+  const addTextPair = (parent, primary, secondary) => {
+    const box = make("div");
+    box.append(make("strong", "", primary), make("small", "", secondary));
+    parent.append(box);
+    return box;
+  };
+
+  const addMetaPair = (parent, label, value) => {
+    const box = make("div");
+    box.append(make("small", "", label), make("strong", "", value));
+    parent.append(box);
+    return box;
+  };
+
+  const statusNode = text => make("span", "status", text);
+  const emptyNode = text => make("div", "client-empty", text);
+
+  const renderList = (root, items, renderer, emptyText) => {
+    if (!root) return;
+    root.replaceChildren();
+    const list = Array.isArray(items) ? items : [];
+    if (!list.length) {
+      root.append(emptyNode(emptyText));
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    for (const item of list) {
+      const node = renderer(item);
+      if (node instanceof Node) fragment.append(node);
+    }
+    if (!fragment.childNodes.length) fragment.append(emptyNode(emptyText));
+    root.append(fragment);
+  };
+
+  const normalizeRole = role => role === "visitante" ? "usuario" : (["usuario", "cliente", "adm", "dono"].includes(role) ? role : "usuario");
+  const roleLabel = role => ({ usuario: "Usuário", cliente: "Cliente", adm: "ADM", dono: "Dono" }[normalizeRole(role)] || "Usuário");
+  const isClientRole = role => ["cliente", "adm", "dono"].includes(normalizeRole(role));
 
   const api = async (path, options = {}) => {
     if (!API) throw new Error("Backend G-Host não configurado.");
-    const headers = { "Content-Type":"application/json", ...(options.headers || {}) };
+    const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
     if (state.token) headers.Authorization = `Bearer ${state.token}`;
     if (options.deviceToken) headers["X-Ghost-Device"] = options.deviceToken;
 
     const response = await fetch(`${API}${path}`, {
       ...options,
       headers,
-      cache:"no-store",
-      credentials:"omit",
-      referrerPolicy:"no-referrer"
+      cache: "no-store",
+      credentials: cookieMode ? "include" : "omit",
+      referrerPolicy: "no-referrer"
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(data.error || "Não foi possível concluir a operação.");
-      error.code = data.code || "";
+      error.code = String(data.code || "");
       error.status = response.status;
       throw error;
     }
@@ -61,26 +109,121 @@
     location.replace("entrar.html");
   };
 
+  const secureRandomId = () => {
+    if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return `dev-${Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("")}`;
+  };
+
   const getDeviceId = () => {
     let id = localStorage.getItem(DEVICE_ID_KEY) || "";
     if (!/^[A-Za-z0-9_-]{8,120}$/.test(id)) {
-      id = (crypto.randomUUID ? crypto.randomUUID() : `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, "-");
+      id = secureRandomId().replace(/[^A-Za-z0-9_-]/g, "-").slice(0, 120);
       localStorage.setItem(DEVICE_ID_KEY, id);
     }
     return id;
   };
 
-  const configurationItem = item => `<article class="client-item"><div><strong>${esc(item.name || "Projeto G-Host")}</strong><small>Plano: ${esc(item.plan_id || "não definido")} · atualizado ${esc(item.updated_at || "")}</small></div><span class="status">${esc(item.status || "rascunho")}</span></article>`;
-  const quoteItem = item => `<article class="client-item"><div><strong>Proposta #${esc(item.id)}</strong><small>Preferência: ${esc(item.contact_preference || "whatsapp")} · ${esc(item.created_at || "")}</small></div><span class="status">${esc(item.status || "novo")}</span></article>`;
-  const projectItem = item => `<article class="client-item"><div><strong>${esc(item.code || "Projeto")} · ${esc(item.name || "")}</strong><small>${esc(item.type || item.location || "Projeto G-Host")}</small></div><div><small>Prazo</small><strong>${esc(item.due_date || "Não informado")}</strong></div><span class="status">${esc(item.status || "")}</span></article>`;
-  const assetItem = item => `<article class="client-item"><div><strong>${esc(item.category || "Equipamento")} · ${esc(item.brand || "")} ${esc(item.model || "")}</strong><small>${esc(item.location || item.project_name || "")}</small></div><div><small>Garantia</small><strong>${esc(item.warranty_until || "Não informada")}</strong></div><span class="status">${esc(item.status || "")}</span></article>`;
-  const serviceItem = item => `<article class="client-item"><div><strong>${esc(item.kind || "Serviço")}</strong><small>${esc(item.summary || item.project_name || item.site_name || "Atendimento G-Host")}</small></div><div><small>Próxima manutenção</small><strong>${esc(item.next_maintenance_at || "Não agendada")}</strong></div><span class="status">${esc(item.status || "")}</span></article>`;
-  const supportTicketItem = item => `<article class="client-item"><div><strong>#${Number(item.id)} · ${esc(item.subject || "Chamado")}</strong><small>${esc(item.description || "")} · prioridade ${esc(item.priority || "normal")}</small></div><span class="status">${esc(item.status || "aberto")}</span></article>`;
-  const contractItem = item => `<article class="client-item"><div><strong>${esc(item.code || "Contrato")}</strong><small>Plano: ${esc(item.plan_id || "não informado")} · versão ${esc(item.version || "1")}</small></div><div class="device-actions"><span class="status">${esc(item.status || "")}</span><a class="btn btn-ghost btn-small" href="contrato.html?id=${Number(item.id)}">Ver</a></div></article>`;
-  const notificationItem = item => `<article class="client-item notification-${esc(item.severity || "info")}"><div><strong>${esc(item.title || "Notificação")}</strong><small>${esc(item.body || "")}</small></div><div><small>${esc(item.created_at || "")}</small><strong>${item.read_at ? "Lida" : "Nova"}</strong></div></article>`;
-  const guardianNode = item => `<article class="client-item"><div><strong>${esc(item.name || "Guardião Hub")}</strong><small>${esc(item.site_name || "Local G-Host")} · versão ${esc(item.software_version || "não informada")}</small></div><div><small>Último contato</small><strong>${esc(item.last_seen_at || "Aguardando")}</strong></div><span class="status">${esc(item.status || "")}</span></article>`;
-  const guardianEvent = item => `<article class="client-item"><div><strong>${esc((item.source || "guardiao").toUpperCase())} · ${esc(item.event_type || "evento")}</strong><small>${esc(item.summary || "")}</small></div><div><small>${esc(item.occurred_at || "")}</small><strong>${esc(item.severity || "info")}</strong></div></article>`;
-  const cameraItem = item => `<article class="camera-card ${item.health_status === "offline" ? "offline" : ""}"><strong>${esc(item.display_name || item.model || item.category || "Câmera")}</strong><span>${esc(item.location || item.project_name || "Projeto G-Host")}</span><span class="camera-state ${item.health_status === "online" ? "ok" : "warn"}">${esc(item.health_status || (item.monitoring_enabled ? "configurada" : "aguardando integração"))}</span></article>`;
+  const configurationItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.name || "Projeto G-Host", `Plano: ${item?.plan_id || "não definido"} · atualizado ${item?.updated_at || ""}`);
+    article.append(statusNode(item?.status || "rascunho"));
+    return article;
+  };
+
+  const quoteItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, `Proposta #${Number(item?.id) || 0}`, `Preferência: ${item?.contact_preference || "whatsapp"} · ${item?.created_at || ""}`);
+    article.append(statusNode(item?.status || "novo"));
+    return article;
+  };
+
+  const projectItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, `${item?.code || "Projeto"} · ${item?.name || ""}`, item?.type || item?.location || "Projeto G-Host");
+    addMetaPair(article, "Prazo", item?.due_date || "Não informado");
+    article.append(statusNode(item?.status || ""));
+    return article;
+  };
+
+  const assetItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, `${item?.category || "Equipamento"} · ${item?.brand || ""} ${item?.model || ""}`.trim(), item?.location || item?.project_name || "");
+    addMetaPair(article, "Garantia", item?.warranty_until || "Não informada");
+    article.append(statusNode(item?.status || ""));
+    return article;
+  };
+
+  const serviceItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.kind || "Serviço", item?.summary || item?.project_name || item?.site_name || "Atendimento G-Host");
+    addMetaPair(article, "Próxima manutenção", item?.next_maintenance_at || "Não agendada");
+    article.append(statusNode(item?.status || ""));
+    return article;
+  };
+
+  const supportTicketItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, `#${Number(item?.id) || 0} · ${item?.subject || "Chamado"}`, `${item?.description || ""} · prioridade ${item?.priority || "normal"}`);
+    article.append(statusNode(item?.status || "aberto"));
+    return article;
+  };
+
+  const contractItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.code || "Contrato", `Plano: ${item?.plan_id || "não informado"} · versão ${item?.version || "1"}`);
+    const actions = make("div", "device-actions");
+    actions.append(statusNode(item?.status || ""));
+    const id = Number(item?.id);
+    if (Number.isInteger(id) && id > 0) {
+      const link = make("a", "btn btn-ghost btn-small", "Ver");
+      link.href = `contrato.html?id=${id}`;
+      actions.append(link);
+    }
+    article.append(actions);
+    return article;
+  };
+
+  const notificationItem = item => {
+    const allowed = new Set(["info", "warning", "critical", "success"]);
+    const severity = allowed.has(String(item?.severity || "")) ? String(item.severity) : "info";
+    const article = make("article", `client-item notification-${severity}`);
+    addTextPair(article, item?.title || "Notificação", item?.body || "");
+    addMetaPair(article, item?.created_at || "", item?.read_at ? "Lida" : "Nova");
+    return article;
+  };
+
+  const guardianNode = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.name || "Guardião Hub", `${item?.site_name || "Local G-Host"} · versão ${item?.software_version || "não informada"}`);
+    addMetaPair(article, "Último contato", item?.last_seen_at || "Aguardando");
+    article.append(statusNode(item?.status || ""));
+    return article;
+  };
+
+  const guardianEvent = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, `${String(item?.source || "guardiao").toUpperCase()} · ${item?.event_type || "evento"}`, item?.summary || "");
+    addMetaPair(article, item?.occurred_at || "", item?.severity || "info");
+    return article;
+  };
+
+  const cameraItem = item => {
+    const offline = item?.health_status === "offline";
+    const article = make("article", `camera-card${offline ? " offline" : ""}`);
+    article.append(
+      make("strong", "", item?.display_name || item?.model || item?.category || "Câmera"),
+      make("span", "", item?.location || item?.project_name || "Projeto G-Host"),
+      make("span", `camera-state ${item?.health_status === "online" ? "ok" : "warn"}`, item?.health_status || (item?.monitoring_enabled ? "configurada" : "aguardando integração"))
+    );
+    return article;
+  };
+
+  const setText = (id, value) => {
+    const el = $(id);
+    if (el) el.textContent = String(value ?? "");
+  };
 
   const setRoleVisibility = role => {
     const user = normalizeRole(role) === "usuario";
@@ -91,40 +234,54 @@
     document.querySelectorAll("[data-user-nav]").forEach(el => { el.hidden = !user; });
     document.querySelectorAll("[data-client-nav]").forEach(el => { el.hidden = !client; });
 
-    const primary = $("primary-action");
-    if (primary) primary.textContent = client ? "Contratar mais serviços" : "Contratar serviço";
-    const title = $("proposal-panel-title");
-    if (title) title.textContent = client ? "Novas propostas e ampliações" : "Meus projetos e propostas";
+    setText("primary-action", client ? "Contratar mais serviços" : "Contratar serviço");
+    setText("proposal-panel-title", client ? "Novas propostas e ampliações" : "Meus projetos e propostas");
 
     if (user) {
-      $("summary-one-label").textContent = "Configurações";
-      $("summary-one-help").textContent = "salvas";
-      $("summary-two-label").textContent = "Propostas";
-      $("summary-two-help").textContent = "solicitadas";
-      $("summary-three-label").textContent = "Em andamento";
-      $("summary-three-help").textContent = "negociações";
+      setText("summary-one-label", "Configurações");
+      setText("summary-one-help", "salvas");
+      setText("summary-two-label", "Propostas");
+      setText("summary-two-help", "solicitadas");
+      setText("summary-three-label", "Em andamento");
+      setText("summary-three-help", "negociações");
     } else {
-      $("summary-one-label").textContent = "Projetos";
-      $("summary-one-help").textContent = "vinculados";
-      $("summary-two-label").textContent = "Equipamentos";
-      $("summary-two-help").textContent = "registrados";
-      $("summary-three-label").textContent = "Chamados/serviços";
-      $("summary-three-help").textContent = "em histórico";
+      setText("summary-one-label", "Projetos");
+      setText("summary-one-help", "vinculados");
+      setText("summary-two-label", "Equipamentos");
+      setText("summary-two-help", "registrados");
+      setText("summary-three-label", "Chamados/serviços");
+      setText("summary-three-help", "em histórico");
     }
+  };
+
+  const deviceItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.label || "Aparelho", `${item?.purpose || "portal"} · ${item?.last_seen_at || ""}`);
+    const actions = make("div", "device-actions");
+    actions.append(statusNode(item?.status || ""));
+    const id = Number(item?.id);
+    if (item?.status === "trusted" && Number.isInteger(id) && id > 0) {
+      const button = make("button", "mini-danger", "Revogar");
+      button.type = "button";
+      button.dataset.revokeDevice = String(id);
+      actions.append(button);
+    }
+    article.append(actions);
+    return article;
   };
 
   const renderDevices = async () => {
     const data = await api("/portal/devices");
-    const limit = $("device-limit-label");
-    if (limit) limit.textContent = `CFTV: até ${data.cameraDeviceLimit || 2} aparelhos`;
+    setText("device-limit-label", `CFTV: até ${data.cameraDeviceLimit || 2} aparelhos`);
     const root = $("client-devices");
-    if (!root) return;
-    root.innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.label || "Aparelho")}</strong><small>${esc(item.purpose || "portal")} · ${esc(item.last_seen_at || "")}</small></div><div class="device-actions"><span class="status">${esc(item.status)}</span>${item.status === "trusted" ? `<button class="mini-danger" type="button" data-revoke-device="${Number(item.id)}">Revogar</button>` : ""}</div></article>`).join("") || empty("Nenhum aparelho registrado.");
-    root.querySelectorAll("[data-revoke-device]").forEach(btn => btn.addEventListener("click", async () => {
+    renderList(root, data.items, deviceItem, "Nenhum aparelho registrado.");
+    root?.querySelectorAll("[data-revoke-device]").forEach(btn => btn.addEventListener("click", async () => {
       if (!confirm("Revogar este aparelho?")) return;
-      await api(`/portal/devices/${btn.dataset.revokeDevice}/revoke`, { method:"POST", body:"{}" });
-      const current = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
-      if (current && current.startsWith(`${getDeviceId()}.`)) localStorage.removeItem(CAMERA_DEVICE_KEY);
+      await api(`/portal/devices/${btn.dataset.revokeDevice}/revoke`, { method: "POST", body: "{}" });
+      if (!cookieMode) {
+        const current = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
+        if (current && current.startsWith(`${getDeviceId()}.`)) localStorage.removeItem(CAMERA_DEVICE_KEY);
+      }
       await renderDevices();
       await loadCameras();
     }));
@@ -136,35 +293,59 @@
     const button = $("authorize-camera-device");
     const stateLabel = $("camera-device-state");
     if (button) button.hidden = false;
+
     const token = localStorage.getItem(CAMERA_DEVICE_KEY) || "";
-    if (!token) {
-      root.innerHTML = empty("Autorize este aparelho para consultar as câmeras vinculadas à sua conta.");
+    if (!cookieMode && !token) {
+      root.replaceChildren(emptyNode("Autorize este aparelho para consultar as câmeras vinculadas à sua conta."));
       if (stateLabel) stateLabel.textContent = "Aparelho não autorizado";
       return;
     }
+
     try {
-      const data = await api("/portal/cameras", { deviceToken: token });
+      const data = await api("/portal/cameras", { deviceToken: cookieMode ? "" : token });
       if (stateLabel) stateLabel.textContent = "Aparelho autorizado";
-      root.innerHTML = (data.items || []).map(cameraItem).join("") || empty("Nenhuma câmera integrada ao seu projeto ainda.");
+      renderList(root, data.items, cameraItem, "Nenhuma câmera integrada ao seu projeto ainda.");
     } catch (error) {
-      if (["DEVICE_REQUIRED","PORTAL_DEVICE_REVOKED"].includes(error.code)) localStorage.removeItem(CAMERA_DEVICE_KEY);
+      if (!cookieMode && ["DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED"].includes(error.code)) localStorage.removeItem(CAMERA_DEVICE_KEY);
       if (stateLabel) stateLabel.textContent = "Acesso bloqueado";
-      root.innerHTML = empty(error.message);
+      root.replaceChildren(emptyNode(error.message));
     }
   };
 
   const loadGuardian = async () => {
     if (!isClientRole(state.role)) return;
-    const nodes = $("guardian-nodes"), events = $("guardian-events");
+    const nodes = $("guardian-nodes");
+    const events = $("guardian-events");
     if (!nodes || !events) return;
     try {
       const data = await api("/portal/guardian");
-      nodes.innerHTML = (data.nodes || []).map(guardianNode).join("") || empty("Nenhum Guardião Hub provisionado para esta conta.");
-      events.innerHTML = (data.events || []).map(guardianEvent).join("") || empty("Nenhum evento recente registrado.");
+      renderList(nodes, data.nodes, guardianNode, "Nenhum Guardião Hub provisionado para esta conta.");
+      renderList(events, data.events, guardianEvent, "Nenhum evento recente registrado.");
     } catch (error) {
-      nodes.innerHTML = empty(error.message);
-      events.innerHTML = "";
+      nodes.replaceChildren(emptyNode(error.message));
+      events.replaceChildren();
     }
+  };
+
+  const emergencyContactItem = item => {
+    const article = make("article", "client-item");
+    addTextPair(article, item?.name || "Contato", item?.relation || "Contato de emergência");
+    const actions = make("div", "device-actions");
+    const phoneText = String(item?.phone || "");
+    const phoneHref = phoneText.replace(/[^0-9+]/g, "");
+    const phone = make("a", "", phoneText);
+    if (/^\+?\d{8,15}$/.test(phoneHref)) phone.href = `tel:${phoneHref}`;
+    else phone.removeAttribute("href");
+    actions.append(phone);
+    const id = Number(item?.id);
+    if (Number.isInteger(id) && id > 0) {
+      const button = make("button", "mini-danger", "Remover");
+      button.type = "button";
+      button.dataset.deleteContact = String(id);
+      actions.append(button);
+    }
+    article.append(actions);
+    return article;
   };
 
   const renderEmergencyContacts = async () => {
@@ -172,39 +353,46 @@
     const root = $("emergency-contacts");
     if (!root) return;
     const data = await api("/portal/emergency-contacts");
-    root.innerHTML = (data.items || []).map(item => `<article class="client-item"><div><strong>${esc(item.name)}</strong><small>${esc(item.relation || "Contato de emergência")}</small></div><div class="device-actions"><a href="tel:${esc(String(item.phone || "").replace(/[^0-9+]/g, ""))}">${esc(item.phone)}</a><button type="button" class="mini-danger" data-delete-contact="${Number(item.id)}">Remover</button></div></article>`).join("") || empty("Nenhum contato cadastrado.");
+    renderList(root, data.items, emergencyContactItem, "Nenhum contato cadastrado.");
     root.querySelectorAll("[data-delete-contact]").forEach(btn => btn.addEventListener("click", async () => {
-      await api(`/portal/emergency-contacts/${btn.dataset.deleteContact}`, { method:"DELETE" });
+      await api(`/portal/emergency-contacts/${btn.dataset.deleteContact}`, { method: "DELETE" });
       await renderEmergencyContacts();
     }));
   };
 
   const renderDashboardData = data => {
     const user = state.role === "usuario";
-    const quotes = data.quotes || [];
-    const configurations = data.configurations || [];
-    const openQuotes = quotes.filter(item => !["recusado","convertido","cancelado"].includes(String(item.status || "").toLowerCase()));
+    const quotes = Array.isArray(data.quotes) ? data.quotes : [];
+    const configurations = Array.isArray(data.configurations) ? data.configurations : [];
+    const notifications = Array.isArray(data.notifications) ? data.notifications : [];
+    const openQuotes = quotes.filter(item => !["recusado", "convertido", "cancelado"].includes(String(item?.status || "").toLowerCase()));
 
-    $("client-configurations").innerHTML = configurations.map(configurationItem).join("") || empty("Nenhuma configuração salva ainda. Use 'Contratar serviço' para começar.");
-    $("client-quotes").innerHTML = quotes.map(quoteItem).join("") || empty("Nenhuma proposta solicitada ainda.");
-    $("client-notifications").innerHTML = (data.notifications || []).map(notificationItem).join("") || empty("Nenhuma notificação.");
+    renderList($("client-configurations"), configurations, configurationItem, "Nenhuma configuração salva ainda. Use 'Contratar serviço' para começar.");
+    renderList($("client-quotes"), quotes, quoteItem, "Nenhuma proposta solicitada ainda.");
+    renderList($("client-notifications"), notifications, notificationItem, "Nenhuma notificação.");
 
     if (user) {
-      $("client-project-count").textContent = String(configurations.length);
-      $("client-asset-count").textContent = String(quotes.length);
-      $("client-service-count").textContent = String(openQuotes.length);
+      setText("client-project-count", configurations.length);
+      setText("client-asset-count", quotes.length);
+      setText("client-service-count", openQuotes.length);
     } else {
-      $("client-project-count").textContent = String((data.projects || []).length);
-      $("client-asset-count").textContent = String((data.assets || []).length);
-      $("client-service-count").textContent = String((data.services || []).length + (data.supportTickets || []).filter(x => !["resolvido","cancelado"].includes(x.status)).length);
-      $("client-projects").innerHTML = (data.projects || []).map(projectItem).join("") || empty("Nenhum projeto operacional vinculado.");
-      $("client-assets").innerHTML = (data.assets || []).map(assetItem).join("") || empty("Nenhum equipamento registrado.");
-      $("client-contracts").innerHTML = (data.contracts || []).map(contractItem).join("") || empty("Nenhum contrato disponível nesta conta.");
-      $("client-services").innerHTML = (data.services || []).map(serviceItem).join("") || empty("Nenhum serviço ou manutenção registrado.");
-      $("client-support-tickets").innerHTML = (data.supportTickets || []).map(supportTicketItem).join("") || empty("Nenhuma solicitação aberta.");
+      const projects = Array.isArray(data.projects) ? data.projects : [];
+      const assets = Array.isArray(data.assets) ? data.assets : [];
+      const services = Array.isArray(data.services) ? data.services : [];
+      const tickets = Array.isArray(data.supportTickets) ? data.supportTickets : [];
+      const contracts = Array.isArray(data.contracts) ? data.contracts : [];
+
+      setText("client-project-count", projects.length);
+      setText("client-asset-count", assets.length);
+      setText("client-service-count", services.length + tickets.filter(x => !["resolvido", "cancelado"].includes(String(x?.status || ""))).length);
+      renderList($("client-projects"), projects, projectItem, "Nenhum projeto operacional vinculado.");
+      renderList($("client-assets"), assets, assetItem, "Nenhum equipamento registrado.");
+      renderList($("client-contracts"), contracts, contractItem, "Nenhum contrato disponível nesta conta.");
+      renderList($("client-services"), services, serviceItem, "Nenhum serviço ou manutenção registrado.");
+      renderList($("client-support-tickets"), tickets, supportTicketItem, "Nenhuma solicitação aberta.");
     }
 
-    $("client-notification-count").textContent = String((data.notifications || []).filter(x => !x.read_at).length);
+    setText("client-notification-count", notifications.filter(x => !x?.read_at).length);
   };
 
   const loadDashboard = async () => {
@@ -214,10 +402,13 @@
     state.dashboard = data;
     state.role = normalizeRole(me.role);
 
-    $("client-welcome").textContent = `Olá, ${me.person?.name || "usuário"}.`;
-    $("client-account-info").textContent = `${me.person?.email || "Conta G-Host"} · perfil ${roleLabel(state.role)}`;
-    $("client-role").hidden = false;
-    $("client-role").textContent = roleLabel(state.role);
+    setText("client-welcome", `Olá, ${me.person?.name || "usuário"}.`);
+    setText("client-account-info", `${me.person?.email || "Conta G-Host"} · perfil ${roleLabel(state.role)}`);
+    const roleEl = $("client-role");
+    if (roleEl) {
+      roleEl.hidden = false;
+      roleEl.textContent = roleLabel(state.role);
+    }
     const adminLink = $("client-admin-link");
     if (adminLink) adminLink.hidden = state.role !== "adm";
 
@@ -232,15 +423,15 @@
   };
 
   const start = async () => {
-    if (!API || !state.token) {
+    if (!API || (!state.token && !cookieMode)) {
       clearSessionAndRedirect();
       return;
     }
-    dashboard.hidden = false;
+    if (dashboard) dashboard.hidden = false;
     try {
       await loadDashboard();
     } catch (error) {
-      if (error.status === 401 || ["PORTAL_DEVICE_REQUIRED","PORTAL_DEVICE_REVOKED","PORTAL_SESSION_INVALID"].includes(error.code)) {
+      if (error.status === 401 || ["PORTAL_DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED", "PORTAL_SESSION_INVALID"].includes(error.code)) {
         clearSessionAndRedirect();
         return;
       }
@@ -253,14 +444,14 @@
     setStatus("Autorizando este aparelho...");
     try {
       const result = await api("/portal/devices/register", {
-        method:"POST",
-        body:JSON.stringify({
-          deviceId:getDeviceId(),
-          label:navigator.userAgentData?.platform || navigator.platform || "Navegador",
-          purpose:"camera"
+        method: "POST",
+        body: JSON.stringify({
+          deviceId: getDeviceId(),
+          label: navigator.userAgentData?.platform || navigator.platform || "Navegador",
+          purpose: "camera"
         })
       });
-      localStorage.setItem(CAMERA_DEVICE_KEY, result.deviceToken);
+      if (!cookieMode && result.deviceToken) localStorage.setItem(CAMERA_DEVICE_KEY, result.deviceToken);
       await Promise.all([renderDevices(), loadCameras()]);
       setStatus("Aparelho autorizado para CFTV.", "success");
     } catch (error) {
@@ -274,11 +465,11 @@
     setStatus("Enviando sua solicitação...");
     try {
       await api("/portal/support", {
-        method:"POST",
-        body:JSON.stringify({
-          subject:$("support-subject").value,
-          priority:$("support-priority").value,
-          description:$("support-description").value
+        method: "POST",
+        body: JSON.stringify({
+          subject: $("support-subject")?.value || "",
+          priority: $("support-priority")?.value || "normal",
+          description: $("support-description")?.value || ""
         })
       });
       event.target.reset();
@@ -292,7 +483,7 @@
 
   $("notifications-read")?.addEventListener("click", async () => {
     try {
-      await api("/portal/notifications/read", { method:"POST", body:"{}" });
+      await api("/portal/notifications/read", { method: "POST", body: "{}" });
       await loadDashboard();
     } catch (error) {
       setStatus(error.message, "error");
@@ -304,11 +495,11 @@
     if (!isClientRole(state.role)) return;
     try {
       await api("/portal/emergency-contacts", {
-        method:"POST",
-        body:JSON.stringify({
-          name:$("emergency-name").value,
-          relation:$("emergency-relation").value,
-          phone:$("emergency-phone").value
+        method: "POST",
+        body: JSON.stringify({
+          name: $("emergency-name")?.value || "",
+          relation: $("emergency-relation")?.value || "",
+          phone: $("emergency-phone")?.value || ""
         })
       });
       event.target.reset();
@@ -329,19 +520,19 @@
       return;
     }
     navigator.geolocation.getCurrentPosition(pos => {
-      const lat = pos.coords.latitude.toFixed(6), lon = pos.coords.longitude.toFixed(6), acc = Math.round(pos.coords.accuracy);
+      const lat = pos.coords.latitude.toFixed(6);
+      const lon = pos.coords.longitude.toFixed(6);
+      const acc = Math.round(pos.coords.accuracy);
       out.replaceChildren();
-      const p = document.createElement("p");
-      p.textContent = `Latitude ${lat} · Longitude ${lon} · precisão aproximada ${acc} m.`;
-      const a = document.createElement("a");
+      const p = make("p", "", `Latitude ${lat} · Longitude ${lon} · precisão aproximada ${acc} m.`);
+      const a = make("a", "", "Abrir localização no mapa");
       a.href = `https://maps.google.com/?q=${encodeURIComponent(`${lat},${lon}`)}`;
       a.target = "_blank";
-      a.rel = "noopener";
-      a.textContent = "Abrir localização no mapa";
+      a.rel = "noopener noreferrer";
       out.append(p, a);
     }, () => {
       out.textContent = "Localização não autorizada ou indisponível.";
-    }, { enableHighAccuracy:true, timeout:10000, maximumAge:30000 });
+    }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 });
   });
 
   $("client-refresh")?.addEventListener("click", () => loadDashboard().catch(error => {
@@ -351,7 +542,7 @@
 
   logoutBtn?.addEventListener("click", async () => {
     try {
-      if (state.token) await api("/portal/logout", { method:"POST", body:"{}" });
+      if (state.token || cookieMode) await api("/portal/logout", { method: "POST", body: "{}" });
     } catch (_) {}
     clearSessionAndRedirect();
   });
