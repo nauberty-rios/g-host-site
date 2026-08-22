@@ -12,6 +12,10 @@ window.GHOST_AUTH_CONFIG = {
 
   const cfg = window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const apiOrigin = (() => { try { return new URL(apiBase).origin; } catch (_) { return ""; } })();
+  const isApiTarget = value => {
+    try { return Boolean(apiOrigin && new URL(value, location.href).origin === apiOrigin); } catch (_) { return false; }
+  };
   const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
   const cookieHostMatches = (() => {
     try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
@@ -66,7 +70,7 @@ window.GHOST_AUTH_CONFIG = {
   };
 
   window.GHOST_PUBLIC_CONFIG_READY = window.GHOST_PUBLIC_CONFIG_READY || (async () => {
-    if (cfg.publicContentEnabled !== true || !apiBase) return false;
+    if (cfg.publicContentEnabled !== true || !apiBase || !apiOrigin) return false;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4500);
     try {
@@ -93,8 +97,6 @@ window.GHOST_AUTH_CONFIG = {
     }
   })();
 
-  // O editor só recebe o evento de autenticação depois que a fonte oficial de
-  // conteúdo foi resolvida. Se D1/API falhar, o fallback estático permanece.
   let contentGateReleased = cfg.publicContentEnabled !== true;
   let contentGateReplaying = false;
   window.addEventListener("ghost-authenticated", event => {
@@ -111,9 +113,10 @@ window.GHOST_AUTH_CONFIG = {
   window.fetch = async (input, init = {}) => {
     let target = "";
     try { target = typeof input === "string" ? input : String(input?.url || ""); } catch (_) {}
+    const sameApi = isApiTarget(target);
 
     let nextInit = init;
-    if (apiBase && target.startsWith(apiBase)) {
+    if (sameApi) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
 
@@ -135,7 +138,7 @@ window.GHOST_AUTH_CONFIG = {
     const response = await nativeFetch(input, nextInit);
 
     try {
-      if (apiBase && target.startsWith(apiBase) && !response.ok) {
+      if (sameApi && !response.ok) {
         const data = await response.clone().json().catch(() => ({}));
         if (data?.code === "OWNER_DEVICE_PENDING" && data?.ownerDeviceToken) {
           localStorage.setItem(OWNER_DEVICE_KEY, String(data.ownerDeviceToken));

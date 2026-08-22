@@ -7,6 +7,7 @@
   const SESSION_KEYS = ["ghost_portal_token"];
   const cfg = window.GHOST_CLIENT_CONFIG || window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const apiOrigin = (() => { try { return new URL(apiBase).origin; } catch (_) { return ""; } })();
   const siteKey = String(cfg.turnstileSiteKey || "").trim();
   const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
   const cookieHostMatches = (() => {
@@ -34,7 +35,7 @@
   const parseApiUrl = value => {
     try {
       const url = new URL(value, location.href);
-      return apiBase && url.href.startsWith(apiBase) ? url : null;
+      return apiOrigin && url.origin === apiOrigin ? url : null;
     } catch (_) {
       return null;
     }
@@ -79,7 +80,7 @@
   }[scope] || "");
 
   const ensureCsrf = async scope => {
-    if (!cookieAuthEnabled || !scope) return "";
+    if (!cookieAuthEnabled || !scope || !apiOrigin) return "";
     const cached = String(csrfTokens.get(scope) || "");
     if (cached) return cached;
     const endpoint = csrfEndpoint(scope);

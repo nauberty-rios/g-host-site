@@ -13,6 +13,10 @@ window.GHOST_CLIENT_CONFIG = {
 
   const cfg = window.GHOST_CLIENT_CONFIG;
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
+  const apiOrigin = (() => { try { return new URL(apiBase).origin; } catch (_) { return ""; } })();
+  const isApiTarget = value => {
+    try { return Boolean(apiOrigin && new URL(value, location.href).origin === apiOrigin); } catch (_) { return false; }
+  };
   const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
   const cookieHostMatches = (() => {
     try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
@@ -64,7 +68,7 @@ window.GHOST_CLIENT_CONFIG = {
   };
 
   window.GHOST_PUBLIC_CONFIG_READY = (async () => {
-    if (cfg.publicContentEnabled !== true || !apiBase) return false;
+    if (cfg.publicContentEnabled !== true || !apiBase || !apiOrigin) return false;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4500);
     try {
@@ -94,9 +98,10 @@ window.GHOST_CLIENT_CONFIG = {
   window.fetch = async (input, init = {}) => {
     let target = "";
     try { target = typeof input === "string" ? input : String(input?.url || ""); } catch (_) {}
+    const sameApi = isApiTarget(target);
 
     let nextInit = init;
-    if (apiBase && target.startsWith(apiBase)) {
+    if (sameApi) {
       const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
       const headers = new Headers(originalHeaders || {});
 
@@ -116,7 +121,7 @@ window.GHOST_CLIENT_CONFIG = {
 
     const response = await nativeFetch(input, nextInit);
 
-    if (page === "cliente.html" && apiBase && target.startsWith(apiBase) && response.status === 401) {
+    if (page === "cliente.html" && sameApi && response.status === 401) {
       const data = await response.clone().json().catch(() => ({}));
       if (["PORTAL_DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED", "PORTAL_SESSION_INVALID"].includes(String(data?.code || ""))) {
         sessionStorage.removeItem(tokenKey);
