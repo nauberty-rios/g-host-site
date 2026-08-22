@@ -1,7 +1,8 @@
 window.GHOST_CLIENT_CONFIG = {
   apiBase: "https://g-host-secure.naubertymoraes13.workers.dev",
   sessionStorageKey: "ghost_portal_token",
-  portalDeviceStorageKey: "ghost_portal_device_v1"
+  portalDeviceStorageKey: "ghost_portal_device_v1",
+  turnstileSiteKey: ""
 };
 
 (() => {
@@ -22,8 +23,6 @@ window.GHOST_CLIENT_CONFIG = {
     return;
   }
 
-  // Toda chamada autenticada do portal leva o segredo do aparelho confiável quando disponível.
-  // Durante a troca do Worker, sessões antigas continuam funcionando até o servidor passar a exigir o aparelho.
   const nativeFetch = window.fetch.bind(window);
   window.fetch = async (input, init = {}) => {
     let target = "";
@@ -42,8 +41,6 @@ window.GHOST_CLIENT_CONFIG = {
 
     const response = await nativeFetch(input, nextInit);
 
-    // Quando o novo Worker entrar em produção, uma sessão antiga sem aparelho
-    // será encerrada e o usuário voltará ao login seguro para autorizar este dispositivo.
     if (page === "cliente.html" && apiBase && target.startsWith(apiBase) && response.status === 401) {
       const data = await response.clone().json().catch(() => ({}));
       if (["PORTAL_DEVICE_REQUIRED", "PORTAL_DEVICE_REVOKED", "PORTAL_SESSION_INVALID"].includes(String(data?.code || ""))) {
@@ -55,8 +52,6 @@ window.GHOST_CLIENT_CONFIG = {
     return response;
   };
 
-  // Sem sessão não existe área autenticada. O aparelho é exigido pelo novo Worker,
-  // mas não bloqueamos antecipadamente para manter uma transição segura do backend atual.
   if (page === "cliente.html") {
     const token = sessionStorage.getItem(tokenKey) || "";
     if (!token) {
@@ -78,6 +73,14 @@ window.GHOST_CLIENT_CONFIG = {
       event.stopImmediatePropagation();
       location.replace(route);
     }, true);
+  }
+
+  if (!document.querySelector('script[data-ghost-phase1]')) {
+    const script = document.createElement("script");
+    script.src = "security-phase1.js";
+    script.async = false;
+    script.dataset.ghostPhase1 = "1";
+    document.head.append(script);
   }
 
   if (!document.querySelector('script[data-ghost-device-access]')) {
