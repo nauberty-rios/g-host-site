@@ -8,7 +8,11 @@
   const cfg = window.GHOST_CLIENT_CONFIG || window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
   const siteKey = String(cfg.turnstileSiteKey || "").trim();
-  const cookieAuthEnabled = cfg.cookieAuthEnabled === true;
+  const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
+  const cookieHostMatches = (() => {
+    try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
+  })();
+  const cookieAuthEnabled = cfg.cookieAuthEnabled === true && cookieHostMatches;
   const turnstileState = new Map();
   const widgetIds = new Map();
   const csrfTokens = new Map();
