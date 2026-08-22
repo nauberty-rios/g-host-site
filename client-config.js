@@ -4,6 +4,7 @@ window.GHOST_CLIENT_CONFIG = {
   portalDeviceStorageKey: "ghost_portal_device_v1",
   cookieAuthEnabled: false,
   cookieApiHost: "api.g-host.seg.br",
+  publicContentEnabled: false,
   turnstileSiteKey: ""
 };
 
@@ -32,6 +33,64 @@ window.GHOST_CLIENT_CONFIG = {
   }
 
   const nativeFetch = window.fetch.bind(window);
+
+  const hasUnsafeObjectKey = value => {
+    if (!value || typeof value !== "object") return false;
+    if (Array.isArray(value)) return value.some(hasUnsafeObjectKey);
+    for (const [key, child] of Object.entries(value)) {
+      if (["__proto__", "prototype", "constructor"].includes(key)) return true;
+      if (hasUnsafeObjectKey(child)) return true;
+    }
+    return false;
+  };
+
+  const applyPublicContent = payload => {
+    const content = payload?.content;
+    if (!payload?.ok || !content || typeof content !== "object" || Array.isArray(content) || hasUnsafeObjectKey(content)) return false;
+    const mappings = [
+      ["site", "SITE_DATA"],
+      ["plans", "GHOST_PLANS"],
+      ["catalog", "GHOST_CATALOG"],
+      ["visibility", "GHOST_VISIBILITY"]
+    ];
+    let applied = false;
+    for (const [key, globalName] of mappings) {
+      const value = content[key];
+      if (!value || typeof value !== "object" || Array.isArray(value)) continue;
+      window[globalName] = value;
+      applied = true;
+    }
+    return applied;
+  };
+
+  window.GHOST_PUBLIC_CONFIG_READY = (async () => {
+    if (cfg.publicContentEnabled !== true || !apiBase) return false;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4500);
+    try {
+      const response = await nativeFetch(`${apiBase}/public/content.json`, {
+        method: "GET",
+        headers: { "Accept": "application/json" },
+        credentials: "omit",
+        cache: "no-store",
+        referrerPolicy: "no-referrer",
+        signal: controller.signal
+      });
+      if (!response.ok) return false;
+      const type = String(response.headers.get("Content-Type") || "").toLowerCase();
+      if (!type.includes("application/json")) return false;
+      const declared = Number(response.headers.get("Content-Length") || 0);
+      if (declared > 1048576) return false;
+      const raw = await response.text();
+      if (!raw || raw.length > 1048576) return false;
+      return applyPublicContent(JSON.parse(raw));
+    } catch (_) {
+      return false;
+    } finally {
+      clearTimeout(timeout);
+    }
+  })();
+
   window.fetch = async (input, init = {}) => {
     let target = "";
     try { target = typeof input === "string" ? input : String(input?.url || ""); } catch (_) {}
