@@ -1,17 +1,16 @@
 User-agent: *
 Allow: /
+
 Disallow: /admin.html
 Disallow: /staff.html
-Disallow: /planos-admin.html
-Disallow: /catalogo-admin.html
-Disallow: /visibilidade-admin.html
-Disallow: /staff-planos.html
 Disallow: /staff-catalogo.html
+Disallow: /staff-planos.html
 Disallow: /staff-visibilidade.html
+Disallow: /catalogo-admin.html
+Disallow: /planos-admin.html
+Disallow: /visibilidade-admin.html
 Disallow: /cliente.html
 Disallow: /contrato.html
-Disallow: /publisher-worker/
-
 Disallow: /entrar.html
 Disallow: /cadastro.html
 Disallow: /recuperar-senha.html

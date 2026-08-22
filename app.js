@@ -31,10 +31,10 @@
   document.title = `${textValue(data.company?.name || "G-Host")} | ${textValue(data.company?.subtitle || "Segurança Eletrônica")}`;
 
   const ann = document.getElementById("announcement");
-  if (data.announcement?.enabled) {
-    document.getElementById("announcement-text").textContent = textValue(data.announcement.text);
-  } else {
-    ann.hidden = true;
+  const annText = document.getElementById("announcement-text");
+  if (ann && annText) {
+    if (data.announcement?.enabled) annText.textContent = textValue(data.announcement.text);
+    else ann.hidden = true;
   }
 
   document.getElementById("hero-eyebrow").textContent = textValue(data.hero?.eyebrow);

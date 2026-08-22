@@ -1,0 +1,21 @@
+name = "g-host-secure"
+main = "worker.js"
+compatibility_date = "2026-08-01"
+
+[vars]
+GITHUB_OWNER = "nauberty-rios"
+GITHUB_REPO = "g-host-site"
+GITHUB_BRANCH = "main"
+ALLOWED_ORIGINS = "https://nauberty-rios.github.io,https://g-host.seg.br,https://www.g-host.seg.br"
+EMAIL_FROM = "G-Host <onboarding@resend.dev>"
+SITE_URL = "https://g-host.seg.br/"
+SESSION_TTL_SECONDS = "1800"
+
+[[kv_namespaces]]
+binding = "AUTH_KV"
+id = "COLOQUE_O_ID_DO_KV_AQUI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "g-host-db"
+database_id = "COLE_O_DATABASE_ID_AQUI"

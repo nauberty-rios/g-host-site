@@ -15,14 +15,26 @@
 
   const api = async (path, options = {}) => {
     if (!API) throw new Error("Backend G-Host não configurado.");
-    const response = await fetch(`${API}${path}`, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-      cache: "no-store",
-      referrerPolicy: "no-referrer"
-    });
+    let response;
+    try {
+      response = await fetch(`${API}${path}`, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+        cache: "no-store",
+        referrerPolicy: "no-referrer"
+      });
+    } catch (_) {
+      throw new Error("Não foi possível conectar ao serviço G-Host. Verifique sua conexão e tente novamente.");
+    }
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || "Não foi possível concluir a operação.");
+    if (!response.ok) {
+      const error = new Error(data.error || (response.status >= 500
+        ? "Serviço temporariamente indisponível. Tente novamente em alguns instantes."
+        : "Não foi possível concluir a operação."));
+      error.code = data.code || "";
+      error.status = response.status;
+      throw error;
+    }
     return data;
   };
 

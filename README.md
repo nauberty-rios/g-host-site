@@ -128,3 +128,7 @@ O acesso da Minha G-Host foi separado em páginas independentes para reduzir con
 - `cliente.html` — painel da Minha G-Host após autenticação.
 
 O menu público agora exibe `Entrar` e `Criar conta` diretamente. Usuários sem sessão que tentarem abrir `cliente.html` são encaminhados para `entrar.html`.
+
+## Domínio oficial
+
+Este pacote está preparado para operar em `https://g-host.seg.br/`. Consulte `DOMINIO-OFICIAL.md` para as etapas externas de DNS/GitHub Pages/Resend.
