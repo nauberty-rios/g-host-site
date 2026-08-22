@@ -47,3 +47,9 @@ jobs:
             echo 'Possível segredo detectado.' >&2
             exit 1
           fi
+
+      - name: Registrar hashes dos documentos públicos
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum termos.html privacidade.html
