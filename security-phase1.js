@@ -3,6 +3,7 @@
 
   const COOKIE_SENTINEL = "__gh_cookie__";
   const DEVICE_KEYS = ["ghost_owner_device_v1", "ghost_staff_device_v1", "ghost_portal_device_v1"];
+  const CAMERA_DEVICE_KEY = "ghost_camera_device_token_v1";
   const SESSION_KEYS = ["ghost_portal_token"];
   const cfg = window.GHOST_CLIENT_CONFIG || window.GHOST_AUTH_CONFIG || {};
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
@@ -90,10 +91,17 @@
     if (action) resetAction(action);
 
     return cloneJsonResponse(response, data => {
-      if (data?.sessionMode !== "cookie") return data;
-      clearLegacySecrets();
-      setCookieSentinel();
-      return data.token ? data : { ...data, token: COOKIE_SENTINEL };
+      let next = data;
+      if (data?.sessionMode === "cookie") {
+        clearLegacySecrets();
+        setCookieSentinel();
+        if (!data.token) next = { ...next, token: COOKIE_SENTINEL };
+      }
+      if (data?.deviceMode === "cookie") {
+        try { localStorage.setItem(CAMERA_DEVICE_KEY, COOKIE_SENTINEL); } catch (_) {}
+        if (!next.deviceToken) next = { ...next, deviceToken: COOKIE_SENTINEL };
+      }
+      return next;
     });
   };
 
