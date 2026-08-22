@@ -8,6 +8,7 @@ window.GHOST_CLIENT_CONFIG = {
   "use strict";
 
   const cfg = window.GHOST_CLIENT_CONFIG;
+  const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
   const tokenKey = cfg.sessionStorageKey;
   const deviceKey = cfg.portalDeviceStorageKey;
   const page = location.pathname.split("/").pop() || "";
@@ -20,6 +21,26 @@ window.GHOST_CLIENT_CONFIG = {
     document.documentElement.replaceChildren();
     return;
   }
+
+  // Toda chamada autenticada do portal leva o segredo do aparelho confiável.
+  // Se a chamada já estiver usando um token específico de CFTV, ele é preservado.
+  const nativeFetch = window.fetch.bind(window);
+  window.fetch = async (input, init = {}) => {
+    let target = "";
+    try { target = typeof input === "string" ? input : String(input?.url || ""); } catch (_) {}
+
+    let nextInit = init;
+    if (apiBase && target.startsWith(apiBase)) {
+      const originalHeaders = init?.headers || (input instanceof Request ? input.headers : undefined);
+      const headers = new Headers(originalHeaders || {});
+      if (headers.has("Authorization") && !headers.has("X-Ghost-Device")) {
+        const device = localStorage.getItem(deviceKey) || "";
+        if (device) headers.set("X-Ghost-Device", device);
+      }
+      nextInit = { ...init, headers };
+    }
+    return nativeFetch(input, nextInit);
+  };
 
   // A área autenticada não aceita mais uma sessão antiga sem aparelho de portal vinculado.
   if (page === "cliente.html") {
