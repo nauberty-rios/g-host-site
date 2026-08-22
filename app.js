@@ -1,5 +1,6 @@
-(() => {
+(async () => {
   "use strict";
+  try { await (window.GHOST_PUBLIC_CONFIG_READY || Promise.resolve(false)); } catch (_) {}
 
   const base = window.SITE_DATA || {};
   let draft = null;
