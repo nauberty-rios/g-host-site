@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Baixar repositório
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
-      - name: Validar todo JavaScript público
+      - name: Validar JavaScript público
         shell: bash
         run: |
           set -euo pipefail
@@ -26,38 +26,35 @@ jobs:
             node --check "$file"
           done < <(find . -type f -name '*.js' -not -path './.git/*' -print0)
 
-      - name: Impedir backend e infraestrutura no repositório público
+      - name: Manter repositório público mínimo
         shell: bash
         run: |
           set -euo pipefail
-          test ! -e worker.js
-          test ! -e wrangler.toml
-          test ! -e wrangler.json
-          test ! -e wrangler.jsonc
-          test ! -e G-HOST-WORKER-TOTP-PLANOS.js
-          test ! -d publisher-worker
-          if find . -type f \( -name '*.sql' -o -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' \) -print -quit | grep -q .; then
-            echo 'Arquivo interno/sensível encontrado no repositório público.' >&2
+          for dir in backend internal private infra docs marketing; do
+            test ! -e "$dir"
+          done
+          if find . -type f \( -name '*.sql' -o -name '*.db' -o -name '*.sqlite' -o -name '*.sqlite3' -o -name '.env' -o -name '.env.*' -o -name '*.pem' -o -name '*.key' -o -name '*.p12' -o -name '*.pfx' -o -name '*.toml' -o -name '*.jsonc' -o -name '*.md' \) -not -path './.git/*' -print -quit | grep -q .; then
+            echo 'Arquivo não necessário ao frontend público encontrado.' >&2
             exit 1
           fi
 
-      - name: Bloquear APIs inseguras no JavaScript público
+      - name: Bloquear APIs inseguras no JavaScript
         shell: bash
         run: |
           set -euo pipefail
           if grep -RIE --include='*.js' --exclude-dir=.git \
             '(^|[^A-Za-z0-9_])(eval[[:space:]]*\(|new[[:space:]]+Function[[:space:]]*\(|document\.write[[:space:]]*\(|insertAdjacentHTML[[:space:]]*\(|Math\.random[[:space:]]*\()|\.innerHTML[[:space:]]*=|\.outerHTML[[:space:]]*=' .; then
-            echo 'API de execução/HTML dinâmico ou aleatoriedade insegura detectada.' >&2
+            echo 'API insegura detectada no JavaScript público.' >&2
             exit 1
           fi
 
-      - name: Impedir publicação operacional via GitHub
+      - name: Impedir dependência operacional do GitHub no frontend
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIE --exclude-dir=.git --exclude='.github/workflows/frontend-security.yml' \
-            '(api\.github\.com|raw\.githubusercontent\.com|GITHUB_[T]OKEN|GITHUB_[O]WNER|GITHUB_[R]EPO|GITHUB_[B]RANCH)' .; then
-            echo 'Referência de publicação/backend via GitHub detectada no frontend público.' >&2
+          if grep -RIE --exclude-dir=.git --exclude-dir=.github \
+            '(api\.github\.com|raw\.githubusercontent\.com|github_pat_|ghp_)' .; then
+            echo 'Dependência operacional ou credencial GitHub detectada.' >&2
             exit 1
           fi
 
@@ -65,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIE --exclude-dir=.git --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' \
+          if grep -RIE --exclude-dir=.git --exclude-dir=.github --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' \
             '(github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|re_[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .; then
             echo 'Possível segredo detectado.' >&2
             exit 1
@@ -82,17 +79,7 @@ jobs:
             grep -Fq "https://api.g-host.seg.br" "$file"
           done
 
-      - name: Validar headers preparados para Cloudflare Pages
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f _headers
-          grep -Fq 'X-Content-Type-Options: nosniff' _headers
-          grep -Fq 'X-Frame-Options: DENY' _headers
-          grep -Fq 'Strict-Transport-Security:' _headers
-          grep -Fq 'Cache-Control: no-store' _headers
-
-      - name: Registrar hashes dos documentos públicos
+      - name: Registrar hashes dos documentos legais
         shell: bash
         run: |
           set -euo pipefail

@@ -1,4 +1,4 @@
-# Segredos e ambiente local
+# Arquivos locais, credenciais e artefatos privados
 .env
 .env.*
 *.pem
@@ -6,14 +6,21 @@
 *.p12
 *.pfx
 *.log
-
-# Backend e infraestrutura não devem ficar no repositório público do site
-worker.js
-G-HOST-WORKER-*.js
-wrangler.toml
-publisher-worker/
 *.sql
+*.db
+*.sqlite
+*.sqlite3
+*.toml
+*.jsonc
 
-# Arquivos locais
+# Conteúdo que não pertence ao frontend público
+backend/
+internal/
+private/
+infra/
+docs/
+marketing/
+
+# Sistema operacional
 .DS_Store
 Thumbs.db
