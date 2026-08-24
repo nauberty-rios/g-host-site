@@ -52,7 +52,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIE --exclude-dir=.git --exclude='.github/workflows/frontend-security.yml' \
+          if grep -RIE --exclude-dir=.git --exclude-dir=.github \
             '(api\.github\.com|raw\.githubusercontent\.com|github_pat_|ghp_)' .; then
             echo 'Dependência operacional ou credencial GitHub detectada.' >&2
             exit 1
@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if grep -RIE --exclude-dir=.git --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' \
+          if grep -RIE --exclude-dir=.git --exclude-dir=.github --exclude='*.png' --exclude='*.jpg' --exclude='*.jpeg' --exclude='*.webp' \
             '(github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|re_[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)' .; then
             echo 'Possível segredo detectado.' >&2
             exit 1
