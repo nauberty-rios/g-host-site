@@ -48,6 +48,17 @@ jobs:
             exit 1
           fi
 
+      - name: Exigir allowlist de origem da API
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in auth-config.js client-config.js; do
+            grep -Fq 'APPROVED_API_ORIGINS' "$file"
+            grep -Fq 'apiOriginApproved' "$file"
+            grep -Fq 'https://g-host-secure.naubertymoraes13.workers.dev' "$file"
+            grep -Fq 'https://api.g-host.seg.br' "$file"
+          done
+
       - name: Impedir dependência operacional do GitHub no frontend
         shell: bash
         run: |
