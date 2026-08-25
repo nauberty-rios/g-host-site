@@ -11,14 +11,19 @@ window.GHOST_AUTH_CONFIG = {
   "use strict";
 
   const cfg = window.GHOST_AUTH_CONFIG || {};
+  const APPROVED_API_ORIGINS = new Set([
+    "https://g-host-secure.naubertymoraes13.workers.dev",
+    "https://api.g-host.seg.br"
+  ]);
   const apiBase = String(cfg.apiBase || "").replace(/\/+$/, "");
   const apiOrigin = (() => { try { return new URL(apiBase).origin; } catch (_) { return ""; } })();
+  const apiOriginApproved = APPROVED_API_ORIGINS.has(apiOrigin);
   const isApiTarget = value => {
-    try { return Boolean(apiOrigin && new URL(value, location.href).origin === apiOrigin); } catch (_) { return false; }
+    try { return Boolean(apiOriginApproved && new URL(value, location.href).origin === apiOrigin); } catch (_) { return false; }
   };
   const cookieApiHost = String(cfg.cookieApiHost || "api.g-host.seg.br").trim().toLowerCase();
   const cookieHostMatches = (() => {
-    try { return new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
+    try { return apiOriginApproved && new URL(apiBase).hostname.toLowerCase() === cookieApiHost; } catch (_) { return false; }
   })();
   const cookieAuthEnabled = cfg.cookieAuthEnabled === true && cookieHostMatches;
   const COOKIE_SENTINEL = "__gh_cookie__";
@@ -32,7 +37,7 @@ window.GHOST_AUTH_CONFIG = {
     "staff-visibilidade.html"
   ]);
 
-  if (protectedPages.has(page) && window.top !== window.self) {
+  if (protectedPages.has(page) && (!apiOriginApproved || window.top !== window.self)) {
     window.stop();
     document.documentElement.replaceChildren();
     return;
@@ -70,7 +75,7 @@ window.GHOST_AUTH_CONFIG = {
   };
 
   window.GHOST_PUBLIC_CONFIG_READY = window.GHOST_PUBLIC_CONFIG_READY || (async () => {
-    if (cfg.publicContentEnabled !== true || !apiBase || !apiOrigin) return false;
+    if (cfg.publicContentEnabled !== true || !apiOriginApproved) return false;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 4500);
     try {
