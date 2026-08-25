@@ -90,6 +90,24 @@ jobs:
             grep -Fq "https://api.g-host.seg.br" "$file"
           done
 
+      - name: Validar CSP das páginas administrativas auxiliares
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in planos-admin.html catalogo-admin.html visibilidade-admin.html staff-planos.html staff-catalogo.html staff-visibilidade.html; do
+            grep -Fq "default-src 'none'" "$file"
+            grep -Fq "base-uri 'none'" "$file"
+            grep -Fq "frame-ancestors 'none'" "$file"
+            grep -Fq "worker-src 'none'" "$file"
+            grep -Fq 'content="no-referrer"' "$file"
+            grep -Fq 'https://g-host-secure.naubertymoraes13.workers.dev' "$file"
+            grep -Fq 'https://api.g-host.seg.br' "$file"
+            if grep -Fq 'https://*.workers.dev' "$file"; then
+              echo "Origem ampla workers.dev detectada em $file" >&2
+              exit 1
+            fi
+          done
+
       - name: Registrar hashes dos documentos legais
         shell: bash
         run: |
